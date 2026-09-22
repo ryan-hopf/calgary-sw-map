@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Calgary SW — Large Residential Parcels</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+<style>
+  html, body { margin:0; height:100%; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  #map { height:100%; width:100%; }
+  #legend {
+    position:absolute; z-index:1000; top:12px; left:12px; background:rgba(255,255,255,.92);
+    padding:10px 12px; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,.3); max-width:320px;
+    font-size:13px; line-height:1.35;
+  }
+  #legend b { display:block; margin-bottom:4px; }
+  .popup { font-size:13px; line-height:1.35; }
+  .popup .row { display:flex; gap:8px; }
+  .popup .label { color:#555; min-width:88px; }
+</style>
+</head>
+<body>
+<div id="legend">Loading parcels…</div>
+<div id="map"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="points_0.js"></script>
+<script src="points_1.js"></script>
+<script src="points_2.js"></script>
+<script src="points_3.js"></script>
+<script src="points_4.js"></script>
+<script src="points_5.js"></script>
+<script src="points_6.js"></script>
+<script src="points_7.js"></script>
+<script>
+(function () {
+  var map = L.map('map', { preferCanvas: true });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  }).addTo(map);
+
+  var points = window.PARCEL_POINTS || [];
+  var cluster = L.markerClusterGroup({
+    chunkedLoading: true,
+    chunkInterval: 200,
+    chunkDelay: 50,
+    maxClusterRadius: 60,
+    spiderfyOnMaxZoom: true,
+    showCoverageOnHover: false
+  });
+
+  function fmtNum(n) {
+    var x = Number(n);
+    if (!isFinite(x)) return String(n == null ? '' : n);
+    return x.toLocaleString('en-CA');
+  }
+  function fmtCAD(n) {
+    var x = Number(n);
+    if (!isFinite(x)) return String(n == null ? '' : n);
+    return x.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 });
+  }
+
+  var bounds = [];
+  for (var i = 0; i < points.length; i++) {
+    var p = points[i];
+    var lat = p[0], lon = p[1];
+    if (lat == null || lon == null) continue;
+    bounds.push([lat, lon]);
+    var marker = L.circleMarker([lat, lon], {
+      radius: 5,
+      color: '#1a365d',
+      weight: 1,
+      fillColor: '#3182ce',
+      fillOpacity: 0.75
+    });
+    marker.bindPopup(
+      '<div class="popup"><strong>' + escapeHtml(p[2]) + '</strong>' +
+      '<div class="row"><span class="label">Land size</span><span>' + fmtNum(p[3]) + ' sq ft</span></div>' +
+      '<div class="row"><span class="label">Assessed</span><span>' + fmtCAD(p[4]) + '</span></div>' +
+      '<div class="row"><span class="label">Community</span><span>' + escapeHtml(p[5]) + '</span></div>' +
+      '<div class="row"><span class="label">Roll #</span><span>' + escapeHtml(String(p[6])) + '</span></div>' +
+      '</div>',
+      { maxWidth: 320 }
+    );
+    cluster.addLayer(marker);
+  }
+
+  map.addLayer(cluster);
+  if (bounds.length) {
+    map.fitBounds(bounds, { padding: [24, 24] });
+  } else {
+    map.setView([51.0, -114.1], 11);
+  }
+
+  document.getElementById('legend').innerHTML =
+    '<b>Filter</b>Residential (RE), land_size_sf &gt; 11,000, address … SW<br>' +
+    '<b style="margin-top:6px">Parcels plotted</b>' + fmtNum(points.length) +
+    '<br><span style="opacity:.7">OpenStreetMap tiles · Leaflet.markercluster</span>';
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+})();
+</script>
+</body>
+</html>
