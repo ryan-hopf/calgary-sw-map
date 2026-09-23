@@ -73,9 +73,8 @@
       background: rgba(255,255,255,.96); padding: 10px 12px; border-radius: 6px;
       box-shadow: 0 1px 4px rgba(0,0,0,.3); font-size: 12px; max-width: min(320px, calc(100% - 24px));
     }
-    .legend b { margin-right: 4px; }
-    #count { font-variant-numeric: tabular-nums; }
-    #range, #lot-range { margin-top: 4px; color: #2d3748; }
+    #range, #lot-range { color: #2d3748; }
+    #lot-range { margin-top: 4px; }
     #warn { margin-top: 4px; color: #9b2c2c; }
     .popup { font-size: 13px; line-height: 1.45; min-width: 200px; }
     .popup strong { display: block; font-size: 14px; margin-bottom: 6px; }
@@ -235,7 +234,6 @@
   <div class="stage">
     <div id="map"></div>
     <div class="legend">
-      <b>Showing</b> <span id="count">Loading…</span>
       <div id="range">All assessed values</div>
       <div id="lot-range">All lot sizes</div>
       <div class="legend-key"><span class="dot dot-fav" aria-hidden="true"></span> Favorites <span class="dot dot-parcel" aria-hidden="true"></span> Other parcels</div>
@@ -334,7 +332,6 @@
   // Stars stay outside the cluster group so a favorite remains visible on top of clusters.
   var favoriteStars = L.layerGroup().addTo(map);
 
-  var countEl = document.getElementById('count');
   var rangeEl = document.getElementById('range');
   var lotRangeEl = document.getElementById('lot-range');
   var warnEl = document.getElementById('warn');
@@ -353,7 +350,6 @@
   var loadComplete = false;
   var filterTimer = null;
   var syncedCount = 0;
-  var visibleCount = 0;
   var lastFilterKey = null;
   var lotLinesOn = false;
   var lotSyncGen = 0;
@@ -762,7 +758,6 @@
       }
       cluster.clearLayers();
       if (visible.length) cluster.addLayers(visible);
-      visibleCount = visible.length;
       syncedCount = markers.length;
       lastFilterKey = key;
     } else if (syncedCount < markers.length) {
@@ -771,7 +766,6 @@
         if (passesFilters(markers[j], filter, lotFilter)) fresh.push(markers[j]);
       }
       if (fresh.length) cluster.addLayers(fresh);
-      visibleCount += fresh.length;
       syncedCount = markers.length;
     }
     var valueInverted = boundsInverted(filter);
@@ -788,13 +782,6 @@
     lotRangeEl.textContent = lotRangeLabel(lotFilter);
     clearBtn.disabled = filter.min == null && filter.max == null;
     clearLotBtn.disabled = lotFilter.min == null && lotFilter.max == null;
-    if (!markers.length && !loadComplete) {
-      countEl.textContent = 'Loading…';
-    } else if (loadComplete) {
-      countEl.textContent = fmtNum(visibleCount) + ' of ' + fmtNum(markers.length);
-    } else {
-      countEl.textContent = fmtNum(visibleCount) + ' of ' + fmtNum(markers.length) + ' loaded';
-    }
     if (lotLinesOn) syncLotLines();
     renderFavorites();
   }
@@ -959,8 +946,7 @@
       if (bounds.length && !keepView) map.fitBounds(bounds, { padding: [24, 24] });
     } catch (e) {
       loadComplete = true;
-      countEl.textContent = 'Load failed';
-      rangeEl.textContent = e.message + ' (try refreshing)';
+      rangeEl.textContent = 'Load failed: ' + e.message + ' (try refreshing)';
       renderFavorites();
       console.error(e);
     }
