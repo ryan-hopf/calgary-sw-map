@@ -85,6 +85,12 @@
     .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; box-sizing: border-box; }
     .dot-parcel { background: #3182ce; box-shadow: inset 0 0 0 1px #1a365d; }
     .dot-fav { width: 12px; height: 12px; background: #d69e2e; box-shadow: inset 0 0 0 2px #744210; }
+    /* Same imagery switch as lot lines: white markers read on aerial photos. Favorites stay gold. */
+    body.imagery-base .dot-parcel { background: #fff; box-shadow: inset 0 0 0 1px #0f172a; }
+    body.imagery-base .marker-cluster:not(.fav-cluster) { background-color: rgba(15, 23, 42, 0.55); }
+    body.imagery-base .marker-cluster:not(.fav-cluster) div {
+      background-color: rgba(255, 255, 255, 0.95); color: #0f172a;
+    }
     #fav-panel {
       position: absolute; z-index: 1200; top: 10px; left: 54px;
       width: min(360px, calc(100% - 66px)); max-height: calc(100% - 20px);
@@ -319,7 +325,11 @@
   });
   map.on('baselayerchange', function (e) {
     imageryBase = e.name !== 'Streets';
-    for (var i = 0; i < markers.length; i++) styleParcelLines(markers[i]);
+    document.body.classList.toggle('imagery-base', imageryBase);
+    for (var i = 0; i < markers.length; i++) {
+      styleParcelLines(markers[i]);
+      styleMarker(markers[i]);
+    }
   });
   // Chunked loading is off so filter refreshes cannot race an in-flight chunk.
   var cluster = L.markerClusterGroup({
@@ -357,7 +367,8 @@
   // Favorites persist by Calgary roll number. The list shows every saved parcel;
   // markers and lot lines still follow the assessed-value and lot-size filters.
   var FAVORITES_STORAGE_KEY = 'calgary-sw-map.favorites';
-  var NORMAL_STYLE = { radius: 5, color: '#1a365d', weight: 1, fillColor: '#3182ce', fillOpacity: 0.75 };
+  var STREET_MARKER = { radius: 5, color: '#1a365d', weight: 1, fillColor: '#3182ce', fillOpacity: 0.75 };
+  var IMAGERY_MARKER = { radius: 5, color: '#0f172a', weight: 1.5, fillColor: '#ffffff', fillOpacity: 0.95 };
   var FAV_STYLE = { radius: 8, color: '#744210', weight: 2, fillColor: '#d69e2e', fillOpacity: 0.95 };
   var favoriteIds = [];
   var favoriteSet = {};
@@ -490,7 +501,8 @@
     } catch (e) { /* ignore quota / private-mode failures */ }
   }
   function markerStyle(roll) {
-    return isFavorite(roll) ? FAV_STYLE : NORMAL_STYLE;
+    if (isFavorite(roll)) return FAV_STYLE;
+    return imageryBase ? IMAGERY_MARKER : STREET_MARKER;
   }
   function styleMarker(marker) {
     marker.setStyle(markerStyle(marker.rollNumber));
