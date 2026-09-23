@@ -19,9 +19,13 @@
     header h1 { font-size: 15px; font-weight: 600; margin: 0; line-height: 1.3; }
     header p { font-size: 12px; margin: 2px 0 0; opacity: .85; }
     .titles { flex: 1 1 240px; min-width: 0; }
-    .value-filter {
+    .filters {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end;
+      gap: 8px 18px; flex: 3 1 680px; min-width: 0;
+    }
+    .value-filter, .lot-filter {
       display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
-      margin: 0; flex: 1 1 320px; justify-content: flex-end;
+      margin: 0; flex: 1 1 280px; justify-content: flex-end; min-width: 0;
     }
     .filter-label {
       font-size: 11px; font-weight: 600; letter-spacing: .04em;
@@ -40,13 +44,13 @@
     }
     .money input::placeholder { color: #718096; }
     .dash { opacity: .85; flex: 0 0 auto; }
-    #clear-filter {
+    #clear-filter, #clear-lot {
       background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.55);
       border-radius: 4px; padding: 8px 12px; min-height: 40px; font: inherit; font-size: 13px;
       cursor: pointer;
     }
-    #clear-filter:disabled { opacity: .4; cursor: default; }
-    #clear-filter:not(:disabled):hover { background: rgba(255,255,255,.12); }
+    #clear-filter:disabled, #clear-lot:disabled { opacity: .4; cursor: default; }
+    #clear-filter:not(:disabled):hover, #clear-lot:not(:disabled):hover { background: rgba(255,255,255,.12); }
     #map { flex: 1 1 auto; min-height: 0; width: 100%; }
     .legend {
       position: absolute; bottom: 24px; left: 12px; z-index: 1000;
@@ -55,7 +59,7 @@
     }
     .legend b { margin-right: 4px; }
     #count { font-variant-numeric: tabular-nums; }
-    #range { margin-top: 4px; color: #2d3748; }
+    #range, #lot-range { margin-top: 4px; color: #2d3748; }
     #warn { margin-top: 4px; color: #9b2c2c; }
     .popup { font-size: 13px; line-height: 1.45; min-width: 200px; }
     .popup strong { display: block; font-size: 14px; margin-bottom: 6px; }
@@ -77,9 +81,10 @@
       overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
     }
     @media (max-width: 720px) {
-      .value-filter { justify-content: stretch; }
+      .filters { justify-content: stretch; flex-basis: 100%; }
+      .value-filter, .lot-filter { justify-content: stretch; flex-basis: 100%; }
       .filter-label { flex: 1 1 100%; }
-      #clear-filter { flex: 0 0 auto; }
+      #clear-filter, #clear-lot { flex: 0 0 auto; }
       .legend { max-width: min(210px, calc(58vw - 16px)); }
       .leaflet-control-attribution { max-width: min(42vw, 190px); font-size: 10px; }
       .leaflet-control-layers-expanded { max-width: calc(100vw - 56px); }
@@ -92,28 +97,46 @@
       <h1>Calgary SW — Single-family homes/lots with land size ≥ 10,000 sq ft</h1>
       <p>Detached, acreage &amp; vacant lots only · multifamily/condo excluded</p>
     </div>
-    <form id="value-filter" class="value-filter" autocomplete="off">
-      <span class="filter-label" id="value-filter-label">Assessed value</span>
-      <div class="bounds" role="group" aria-labelledby="value-filter-label">
-        <label class="money">
-          <span class="sr">Minimum assessed value in Canadian dollars</span>
-          <span class="prefix" aria-hidden="true">$</span>
-          <input id="min-value" type="text" inputmode="numeric" placeholder="No min" aria-label="Minimum assessed value in Canadian dollars">
-        </label>
-        <span class="dash" aria-hidden="true">–</span>
-        <label class="money">
-          <span class="sr">Maximum assessed value in Canadian dollars</span>
-          <span class="prefix" aria-hidden="true">$</span>
-          <input id="max-value" type="text" inputmode="numeric" placeholder="No max" aria-label="Maximum assessed value in Canadian dollars">
-        </label>
-      </div>
-      <button type="button" id="clear-filter" disabled>Clear</button>
-    </form>
+    <div class="filters">
+      <form id="value-filter" class="value-filter" autocomplete="off">
+        <span class="filter-label" id="value-filter-label">Assessed value</span>
+        <div class="bounds" role="group" aria-labelledby="value-filter-label">
+          <label class="money">
+            <span class="sr">Minimum assessed value in Canadian dollars</span>
+            <span class="prefix" aria-hidden="true">$</span>
+            <input id="min-value" type="text" inputmode="numeric" placeholder="No min" aria-label="Minimum assessed value in Canadian dollars">
+          </label>
+          <span class="dash" aria-hidden="true">–</span>
+          <label class="money">
+            <span class="sr">Maximum assessed value in Canadian dollars</span>
+            <span class="prefix" aria-hidden="true">$</span>
+            <input id="max-value" type="text" inputmode="numeric" placeholder="No max" aria-label="Maximum assessed value in Canadian dollars">
+          </label>
+        </div>
+        <button type="button" id="clear-filter" disabled>Clear</button>
+      </form>
+      <form id="lot-filter" class="lot-filter" autocomplete="off">
+        <span class="filter-label" id="lot-filter-label">Lot size (sq ft)</span>
+        <div class="bounds" role="group" aria-labelledby="lot-filter-label">
+          <label class="money">
+            <span class="sr">Minimum lot size in square feet</span>
+            <input id="min-lot" type="text" inputmode="numeric" placeholder="No min" aria-label="Minimum lot size in square feet">
+          </label>
+          <span class="dash" aria-hidden="true">–</span>
+          <label class="money">
+            <span class="sr">Maximum lot size in square feet</span>
+            <input id="max-lot" type="text" inputmode="numeric" placeholder="No max" aria-label="Maximum lot size in square feet">
+          </label>
+        </div>
+        <button type="button" id="clear-lot" disabled>Clear</button>
+      </form>
+    </div>
   </header>
   <div id="map"></div>
   <div class="legend">
     <b>Showing</b> <span id="count">Loading…</span>
     <div id="range">All assessed values</div>
+    <div id="lot-range">All lot sizes</div>
     <div id="warn" hidden>Minimum is above maximum.</div>
     <div id="bar"></div>
   </div>
@@ -171,12 +194,17 @@
 
   var countEl = document.getElementById('count');
   var rangeEl = document.getElementById('range');
+  var lotRangeEl = document.getElementById('lot-range');
   var warnEl = document.getElementById('warn');
   var barEl = document.getElementById('bar');
   var minEl = document.getElementById('min-value');
   var maxEl = document.getElementById('max-value');
   var clearBtn = document.getElementById('clear-filter');
   var formEl = document.getElementById('value-filter');
+  var minLotEl = document.getElementById('min-lot');
+  var maxLotEl = document.getElementById('max-lot');
+  var clearLotBtn = document.getElementById('clear-lot');
+  var lotFormEl = document.getElementById('lot-filter');
 
   var markers = [];
   var bounds = [];
@@ -204,6 +232,11 @@
     var x = Number(String(v).replace(/[$,\s]/g, ''));
     return isFinite(x) ? x : null;
   }
+  function parseSize(v) {
+    if (v == null || v === '') return null;
+    var x = Number(String(v).replace(/[,\s]/g, ''));
+    return isFinite(x) ? x : null;
+  }
   function parseYear(v) {
     if (v == null || v === '') return null;
     var x = Number(v);
@@ -222,6 +255,9 @@
   function currentFilter() {
     return { min: readBound(minEl.value), max: readBound(maxEl.value) };
   }
+  function currentLotFilter() {
+    return { min: readBound(minLotEl.value), max: readBound(maxLotEl.value) };
+  }
   function inRange(value, filter) {
     if (filter.min == null && filter.max == null) return true;
     if (value == null || !isFinite(value)) return false;
@@ -234,6 +270,20 @@
     if (filter.min != null && filter.max != null) return fmtCAD(filter.min) + ' – ' + fmtCAD(filter.max);
     if (filter.min != null) return fmtCAD(filter.min) + ' and up';
     return 'Up to ' + fmtCAD(filter.max);
+  }
+  function lotRangeLabel(filter) {
+    if (filter.min == null && filter.max == null) return 'All lot sizes';
+    if (filter.min != null && filter.max != null) {
+      return fmtNum(Math.round(filter.min)) + ' – ' + fmtNum(Math.round(filter.max)) + ' sq ft';
+    }
+    if (filter.min != null) return fmtNum(Math.round(filter.min)) + ' sq ft and up';
+    return 'Up to ' + fmtNum(Math.round(filter.max)) + ' sq ft';
+  }
+  function boundsInverted(filter) {
+    return filter.min != null && filter.max != null && filter.min > filter.max;
+  }
+  function passesFilters(marker, valueFilter, lotFilter) {
+    return inRange(marker.assessedValue, valueFilter) && inRange(marker.landSize, lotFilter);
   }
   function filterKey(filter) {
     return (filter.min == null ? '' : String(filter.min)) + '|' + (filter.max == null ? '' : String(filter.max));
@@ -261,11 +311,12 @@
   }
   function applyFilter(rebuild) {
     var filter = currentFilter();
-    var key = filterKey(filter);
+    var lotFilter = currentLotFilter();
+    var key = filterKey(filter) + '||' + filterKey(lotFilter);
     if (rebuild || key !== lastFilterKey) {
       var visible = [];
       for (var i = 0; i < markers.length; i++) {
-        if (inRange(markers[i].assessedValue, filter)) visible.push(markers[i]);
+        if (passesFilters(markers[i], filter, lotFilter)) visible.push(markers[i]);
       }
       cluster.clearLayers();
       if (visible.length) cluster.addLayers(visible);
@@ -275,16 +326,26 @@
     } else if (syncedCount < markers.length) {
       var fresh = [];
       for (var j = syncedCount; j < markers.length; j++) {
-        if (inRange(markers[j].assessedValue, filter)) fresh.push(markers[j]);
+        if (passesFilters(markers[j], filter, lotFilter)) fresh.push(markers[j]);
       }
       if (fresh.length) cluster.addLayers(fresh);
       visibleCount += fresh.length;
       syncedCount = markers.length;
     }
-    var inverted = filter.min != null && filter.max != null && filter.min > filter.max;
-    warnEl.hidden = !inverted;
+    var valueInverted = boundsInverted(filter);
+    var lotInverted = boundsInverted(lotFilter);
+    if (valueInverted && lotInverted) {
+      warnEl.textContent = 'Minimum is above maximum for assessed value and lot size.';
+    } else if (lotInverted) {
+      warnEl.textContent = 'Minimum lot size is above maximum.';
+    } else {
+      warnEl.textContent = 'Minimum is above maximum.';
+    }
+    warnEl.hidden = !(valueInverted || lotInverted);
     rangeEl.textContent = rangeLabel(filter);
+    lotRangeEl.textContent = lotRangeLabel(lotFilter);
     clearBtn.disabled = filter.min == null && filter.max == null;
+    clearLotBtn.disabled = lotFilter.min == null && lotFilter.max == null;
     if (!markers.length && !loadComplete) {
       countEl.textContent = 'Loading…';
     } else if (loadComplete) {
@@ -330,6 +391,31 @@
     formatBoundInput(maxEl);
     applyFilter(true);
   });
+  minLotEl.addEventListener('input', scheduleFilter);
+  maxLotEl.addEventListener('input', scheduleFilter);
+  minLotEl.addEventListener('change', function () {
+    if (filterTimer) clearTimeout(filterTimer);
+    formatBoundInput(minLotEl);
+    applyFilter(true);
+  });
+  maxLotEl.addEventListener('change', function () {
+    if (filterTimer) clearTimeout(filterTimer);
+    formatBoundInput(maxLotEl);
+    applyFilter(true);
+  });
+  clearLotBtn.addEventListener('click', function () {
+    if (filterTimer) clearTimeout(filterTimer);
+    minLotEl.value = '';
+    maxLotEl.value = '';
+    applyFilter(true);
+  });
+  lotFormEl.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (filterTimer) clearTimeout(filterTimer);
+    formatBoundInput(minLotEl);
+    formatBoundInput(maxLotEl);
+    applyFilter(true);
+  });
 
   window.addEventListener('resize', function () { map.invalidateSize(); });
   requestAnimationFrame(function () { map.invalidateSize(); });
@@ -357,7 +443,7 @@
           });
           marker.address = r.address;
           marker.useLabel = USE_LABELS[r.sub_property_use] || r.sub_property_use;
-          marker.landSize = r.land_size_sf;
+          marker.landSize = parseSize(r.land_size_sf);
           marker.community = r.comm_name;
           marker.rollNumber = r.roll_number;
           marker.assessedValue = parseMoney(r.assessed_value);
