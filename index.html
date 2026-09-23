@@ -73,9 +73,8 @@
       background: rgba(255,255,255,.96); padding: 10px 12px; border-radius: 6px;
       box-shadow: 0 1px 4px rgba(0,0,0,.3); font-size: 12px; max-width: min(320px, calc(100% - 24px));
     }
-    .legend b { margin-right: 4px; }
-    #count { font-variant-numeric: tabular-nums; }
-    #range, #lot-range { margin-top: 4px; color: #2d3748; }
+    #range, #lot-range { color: #2d3748; }
+    #lot-range { margin-top: 4px; }
     #warn { margin-top: 4px; color: #9b2c2c; }
     .popup { font-size: 13px; line-height: 1.45; min-width: 200px; }
     .popup strong { display: block; font-size: 14px; margin-bottom: 6px; }
@@ -86,6 +85,12 @@
     .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; box-sizing: border-box; }
     .dot-parcel { background: #3182ce; box-shadow: inset 0 0 0 1px #1a365d; }
     .dot-fav { width: 12px; height: 12px; background: #d69e2e; box-shadow: inset 0 0 0 2px #744210; }
+    /* Same imagery switch as lot lines: white markers read on aerial photos. Favorites stay gold. */
+    body.imagery-base .dot-parcel { background: #fff; box-shadow: inset 0 0 0 1px #0f172a; }
+    body.imagery-base .marker-cluster:not(.fav-cluster) { background-color: rgba(15, 23, 42, 0.55); }
+    body.imagery-base .marker-cluster:not(.fav-cluster) div {
+      background-color: rgba(255, 255, 255, 0.95); color: #0f172a;
+    }
     #fav-panel {
       position: absolute; z-index: 1200; top: 10px; left: 54px;
       width: min(360px, calc(100% - 66px)); max-height: calc(100% - 20px);
@@ -235,7 +240,6 @@
   <div class="stage">
     <div id="map"></div>
     <div class="legend">
-      <b>Showing</b> <span id="count">Loading…</span>
       <div id="range">All assessed values</div>
       <div id="lot-range">All lot sizes</div>
       <div class="legend-key"><span class="dot dot-fav" aria-hidden="true"></span> Favorites <span class="dot dot-parcel" aria-hidden="true"></span> Other parcels</div>
@@ -321,7 +325,11 @@
   });
   map.on('baselayerchange', function (e) {
     imageryBase = e.name !== 'Streets';
-    for (var i = 0; i < markers.length; i++) styleParcelLines(markers[i]);
+    document.body.classList.toggle('imagery-base', imageryBase);
+    for (var i = 0; i < markers.length; i++) {
+      styleParcelLines(markers[i]);
+      styleMarker(markers[i]);
+    }
   });
   // Chunked loading is off so filter refreshes cannot race an in-flight chunk.
   var cluster = L.markerClusterGroup({
@@ -334,7 +342,6 @@
   // Stars stay outside the cluster group so a favorite remains visible on top of clusters.
   var favoriteStars = L.layerGroup().addTo(map);
 
-  var countEl = document.getElementById('count');
   var rangeEl = document.getElementById('range');
   var lotRangeEl = document.getElementById('lot-range');
   var warnEl = document.getElementById('warn');
@@ -353,7 +360,6 @@
   var loadComplete = false;
   var filterTimer = null;
   var syncedCount = 0;
-  var visibleCount = 0;
   var lastFilterKey = null;
   var lotLinesOn = false;
   var lotSyncGen = 0;
@@ -361,7 +367,8 @@
   // Favorites persist by Calgary roll number. The list shows every saved parcel;
   // markers and lot lines still follow the assessed-value and lot-size filters.
   var FAVORITES_STORAGE_KEY = 'calgary-sw-map.favorites';
-  var NORMAL_STYLE = { radius: 5, color: '#1a365d', weight: 1, fillColor: '#3182ce', fillOpacity: 0.75 };
+  var STREET_MARKER = { radius: 5, color: '#1a365d', weight: 1, fillColor: '#3182ce', fillOpacity: 0.75 };
+  var IMAGERY_MARKER = { radius: 5, color: '#0f172a', weight: 1.5, fillColor: '#ffffff', fillOpacity: 0.95 };
   var FAV_STYLE = { radius: 8, color: '#744210', weight: 2, fillColor: '#d69e2e', fillOpacity: 0.95 };
   var favoriteIds = [];
   var favoriteSet = {};
@@ -494,7 +501,8 @@
     } catch (e) { /* ignore quota / private-mode failures */ }
   }
   function markerStyle(roll) {
-    return isFavorite(roll) ? FAV_STYLE : NORMAL_STYLE;
+    if (isFavorite(roll)) return FAV_STYLE;
+    return imageryBase ? IMAGERY_MARKER : STREET_MARKER;
   }
   function styleMarker(marker) {
     marker.setStyle(markerStyle(marker.rollNumber));
@@ -762,7 +770,6 @@
       }
       cluster.clearLayers();
       if (visible.length) cluster.addLayers(visible);
-      visibleCount = visible.length;
       syncedCount = markers.length;
       lastFilterKey = key;
     } else if (syncedCount < markers.length) {
@@ -771,7 +778,6 @@
         if (passesFilters(markers[j], filter, lotFilter)) fresh.push(markers[j]);
       }
       if (fresh.length) cluster.addLayers(fresh);
-      visibleCount += fresh.length;
       syncedCount = markers.length;
     }
     var valueInverted = boundsInverted(filter);
@@ -788,13 +794,6 @@
     lotRangeEl.textContent = lotRangeLabel(lotFilter);
     clearBtn.disabled = filter.min == null && filter.max == null;
     clearLotBtn.disabled = lotFilter.min == null && lotFilter.max == null;
-    if (!markers.length && !loadComplete) {
-      countEl.textContent = 'Loading…';
-    } else if (loadComplete) {
-      countEl.textContent = fmtNum(visibleCount) + ' of ' + fmtNum(markers.length);
-    } else {
-      countEl.textContent = fmtNum(visibleCount) + ' of ' + fmtNum(markers.length) + ' loaded';
-    }
     if (lotLinesOn) syncLotLines();
     renderFavorites();
   }
@@ -959,8 +958,7 @@
       if (bounds.length && !keepView) map.fitBounds(bounds, { padding: [24, 24] });
     } catch (e) {
       loadComplete = true;
-      countEl.textContent = 'Load failed';
-      rangeEl.textContent = e.message + ' (try refreshing)';
+      rangeEl.textContent = 'Load failed: ' + e.message + ' (try refreshing)';
       renderFavorites();
       console.error(e);
     }
