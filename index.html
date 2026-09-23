@@ -942,7 +942,8 @@
           marker.assessedValue = parseMoney(r.assessed_value);
           marker.yearBuilt = parseYear(r.year_of_construction);
           marker.multipolygon = r.multipolygon;
-          marker.bindPopup(function () { return popupHtml(marker); }, { maxWidth: 320 });
+          // Pass the layer in. A function that closed over `marker` would show the last parcel loaded.
+          marker.bindPopup(function (layer) { return popupHtml(layer); }, { maxWidth: 320 });
           if (roll && !markersByRoll[roll]) markersByRoll[roll] = marker;
           markers.push(marker);
         }
