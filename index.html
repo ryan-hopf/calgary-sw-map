@@ -51,7 +51,23 @@
     }
     #clear-filter:disabled, #clear-lot:disabled { opacity: .4; cursor: default; }
     #clear-filter:not(:disabled):hover, #clear-lot:not(:disabled):hover { background: rgba(255,255,255,.12); }
-    #map { flex: 1 1 auto; min-height: 0; width: 100%; }
+    #fav-open {
+      display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;
+      background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.55);
+      border-radius: 4px; padding: 8px 12px; min-height: 40px; font: inherit; font-size: 13px;
+      font-weight: 600; cursor: pointer;
+    }
+    #fav-open:hover { background: rgba(255,255,255,.12); }
+    #fav-open.has-favorites, #fav-open[aria-expanded="true"] {
+      background: #b7791f; border-color: #ecc94b; color: #fff;
+    }
+    #fav-open.has-favorites:hover, #fav-open[aria-expanded="true"]:hover { background: #975a16; }
+    .fav-count {
+      display: inline-block; min-width: 1.25em; padding: 0 6px; border-radius: 999px;
+      background: rgba(0,0,0,.18); font-variant-numeric: tabular-nums; text-align: center;
+    }
+    .stage { position: relative; flex: 1 1 auto; min-height: 0; }
+    #map { height: 100%; width: 100%; }
     .legend {
       position: absolute; bottom: 24px; left: 12px; z-index: 1000;
       background: rgba(255,255,255,.96); padding: 10px 12px; border-radius: 6px;
@@ -66,6 +82,78 @@
     .row { display: flex; justify-content: space-between; gap: 12px; }
     .label { color: #555; }
     #bar { height: 3px; background: #2b6cb0; width: 0; transition: width .2s; margin-top: 6px; border-radius: 2px; }
+    .legend-key { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; margin-top: 6px; color: #2d3748; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; box-sizing: border-box; }
+    .dot-parcel { background: #3182ce; box-shadow: inset 0 0 0 1px #1a365d; }
+    .dot-fav { width: 12px; height: 12px; background: #d69e2e; box-shadow: inset 0 0 0 2px #744210; }
+    #fav-panel {
+      position: absolute; z-index: 1200; top: 10px; left: 54px;
+      width: min(360px, calc(100% - 66px)); max-height: calc(100% - 20px);
+      display: flex; flex-direction: column; overflow: hidden;
+      background: rgba(255,255,255,.98); color: #1a202c; border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.28);
+    }
+    #fav-panel[hidden] { display: none; }
+    .fav-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 10px 12px; background: #1a365d; color: #fff;
+    }
+    .fav-head h2 { margin: 0; font-size: 15px; font-weight: 600; }
+    #fav-close {
+      background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.55);
+      border-radius: 4px; padding: 6px 10px; min-height: 36px; font: inherit; font-size: 13px;
+      cursor: pointer;
+    }
+    #fav-close:hover { background: rgba(255,255,255,.12); }
+    .fav-note {
+      margin: 0; padding: 8px 12px; font-size: 12px; line-height: 1.4; color: #4a5568;
+      background: #f7fafc; border-bottom: 1px solid #e2e8f0;
+    }
+    .fav-empty { margin: 0; padding: 16px 12px 18px; font-size: 13px; line-height: 1.45; color: #2d3748; }
+    #fav-list { list-style: none; margin: 0; padding: 0; overflow: auto; min-height: 0; -webkit-overflow-scrolling: touch; }
+    .fav-item { padding: 10px 12px 12px; border-bottom: 1px solid #edf2f7; }
+    .fav-item-title { font-weight: 600; font-size: 14px; line-height: 1.35; }
+    .fav-meta { margin-top: 3px; font-size: 12px; line-height: 1.4; color: #4a5568; }
+    .fav-hidden-note { margin-top: 4px; font-size: 12px; line-height: 1.35; color: #975a16; }
+    .fav-actions { display: flex; gap: 8px; margin-top: 8px; }
+    .fav-actions button {
+      flex: 1 1 0; min-height: 44px; font: inherit; font-size: 13px; font-weight: 600;
+      border-radius: 4px; cursor: pointer;
+    }
+    .fav-jump { background: #1a365d; color: #fff; border: 0; }
+    .fav-jump:hover { background: #2a4365; }
+    .fav-remove { background: #fff; color: #1a365d; border: 1px solid #cbd5e0; }
+    .fav-remove:hover { background: #fff5f5; color: #9b2c2c; border-color: #feb2b2; }
+    .fav-toggle {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      width: 100%; box-sizing: border-box; margin: 0 0 8px; min-height: 44px;
+      border-radius: 6px; border: 1px solid #d69e2e; background: #fffaf0; color: #975a16;
+      font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    .fav-toggle:hover { background: #feebc8; }
+    .fav-toggle[aria-pressed="true"] { background: #d69e2e; border-color: #b7791f; color: #1a202c; }
+    .fav-toggle[aria-pressed="true"]:hover { background: #ecc94b; }
+    .fav-star { font-size: 16px; line-height: 1; }
+    .popup-hidden { margin: 8px 0 0; color: #975a16; font-size: 12px; }
+    .fav-cluster-wrap { position: relative; display: block; width: 40px; height: 40px; }
+    .marker-cluster.fav-cluster { background-color: rgba(214, 158, 46, 0.55); }
+    .marker-cluster.fav-cluster div { background-color: rgba(146, 90, 16, 0.92); color: #fff; }
+    .marker-cluster .fav-cluster-star {
+      position: absolute; z-index: 2; top: -3px; right: -3px; width: 18px; height: 18px;
+      border-radius: 50%; background: #1a202c; color: #faf089; font-size: 12px; line-height: 18px;
+      text-align: center; box-shadow: 0 0 0 1px #fff; pointer-events: none;
+    }
+    .leaflet-div-icon.fav-pin { background: transparent; border: none; }
+    .fav-pin span {
+      display: flex; align-items: center; justify-content: center; box-sizing: border-box;
+      width: 26px; height: 26px; border-radius: 50%; background: #d69e2e; color: #1a202c;
+      border: 2px solid #744210; font-size: 15px; line-height: 1;
+      box-shadow: 0 1px 4px rgba(0,0,0,.45);
+    }
+    #fav-open:focus-visible, #fav-close:focus-visible, .fav-toggle:focus-visible,
+    .fav-jump:focus-visible, .fav-remove:focus-visible {
+      outline: 2px solid #ecc94b; outline-offset: 2px;
+    }
     .leaflet-control-layers {
       border: none; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,.3);
     }
@@ -88,6 +176,11 @@
       .filter-label { flex: 1 1 100%; }
       #clear-filter, #clear-lot { flex: 0 0 auto; }
       .legend { max-width: min(210px, calc(58vw - 16px)); }
+      #fav-panel {
+        top: auto; bottom: 8px; left: 8px; right: 8px; width: auto;
+        max-height: min(62vh, calc(100% - 16px));
+        padding-bottom: env(safe-area-inset-bottom);
+      }
       .leaflet-control-attribution { max-width: min(42vw, 190px); font-size: 10px; }
       .leaflet-control-layers-expanded { max-width: calc(100vw - 56px); }
     }
@@ -98,6 +191,11 @@
     <div class="titles">
       <h1>Calgary SW — Single-family homes/lots with land size ≥ 10,000 sq ft</h1>
       <p>Detached, acreage &amp; vacant lots only · multifamily/condo excluded</p>
+      <button type="button" id="fav-open" aria-expanded="false" aria-controls="fav-panel">
+        <span aria-hidden="true">★</span>
+        <span>Favorites</span>
+        <span id="fav-count" class="fav-count">0</span>
+      </button>
     </div>
     <div class="filters">
       <form id="value-filter" class="value-filter" autocomplete="off">
@@ -134,13 +232,25 @@
       </form>
     </div>
   </header>
-  <div id="map"></div>
-  <div class="legend">
-    <b>Showing</b> <span id="count">Loading…</span>
-    <div id="range">All assessed values</div>
-    <div id="lot-range">All lot sizes</div>
-    <div id="warn" hidden>Minimum is above maximum.</div>
-    <div id="bar"></div>
+  <div class="stage">
+    <div id="map"></div>
+    <div class="legend">
+      <b>Showing</b> <span id="count">Loading…</span>
+      <div id="range">All assessed values</div>
+      <div id="lot-range">All lot sizes</div>
+      <div class="legend-key"><span class="dot dot-fav" aria-hidden="true"></span> Favorites <span class="dot dot-parcel" aria-hidden="true"></span> Other parcels</div>
+      <div id="warn" hidden>Minimum is above maximum.</div>
+      <div id="bar"></div>
+    </div>
+    <aside id="fav-panel" hidden aria-labelledby="fav-heading">
+      <div class="fav-head">
+        <h2 id="fav-heading">Favorites</h2>
+        <button type="button" id="fav-close">Close</button>
+      </div>
+      <p class="fav-note">Saved in this browser. This list keeps every favorite. Map markers still follow the assessed-value and lot-size filters.</p>
+      <p id="fav-empty" class="fav-empty">No favorites yet. Open a parcel and tap Favorite to keep it on this device.</p>
+      <ul id="fav-list"></ul>
+    </aside>
   </div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
@@ -158,6 +268,9 @@
   // Below the overlay pane (circle markers) and above tiles, including hybrid labels.
   map.createPane('lotLines');
   map.getPane('lotLines').style.zIndex = 350;
+  // Above parcel markers and clusters, below popups.
+  map.createPane('favorites');
+  map.getPane('favorites').style.zIndex = 650;
   var lotRenderer = L.canvas({ pane: 'lotLines' });
   var IMAGERY = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
   var ROADS = 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}';
@@ -212,8 +325,14 @@
   });
   // Chunked loading is off so filter refreshes cannot race an in-flight chunk.
   var cluster = L.markerClusterGroup({
-    chunkedLoading: false, maxClusterRadius: 60, spiderfyOnMaxZoom: true, showCoverageOnHover: false
+    chunkedLoading: false,
+    maxClusterRadius: 60,
+    spiderfyOnMaxZoom: true,
+    showCoverageOnHover: false,
+    iconCreateFunction: clusterIcon
   }).addTo(map);
+  // Stars stay outside the cluster group so a favorite remains visible on top of clusters.
+  var favoriteStars = L.layerGroup().addTo(map);
 
   var countEl = document.getElementById('count');
   var rangeEl = document.getElementById('range');
@@ -239,6 +358,21 @@
   var lotLinesOn = false;
   var lotSyncGen = 0;
   var imageryBase = false;
+  // Favorites persist by Calgary roll number. The list shows every saved parcel;
+  // markers and lot lines still follow the assessed-value and lot-size filters.
+  var FAVORITES_STORAGE_KEY = 'calgary-sw-map.favorites';
+  var NORMAL_STYLE = { radius: 5, color: '#1a365d', weight: 1, fillColor: '#3182ce', fillOpacity: 0.75 };
+  var FAV_STYLE = { radius: 8, color: '#744210', weight: 2, fillColor: '#d69e2e', fillOpacity: 0.95 };
+  var favoriteIds = [];
+  var favoriteSet = {};
+  var markersByRoll = {};
+  var activePopup = null;
+  var keepView = false;
+  var favOpenBtn = document.getElementById('fav-open');
+  var favPanel = document.getElementById('fav-panel');
+  var favList = document.getElementById('fav-list');
+  var favEmpty = document.getElementById('fav-empty');
+  var favCountEl = document.getElementById('fav-count');
   // Halo under a thinner stroke so shared lot edges stay readable on streets and imagery.
   var STREET_HALO = { color: '#ffffff', weight: 2.5, opacity: 0.75 };
   var STREET_LINE = { color: '#1a365d', weight: 1.15, opacity: 0.95 };
@@ -331,14 +465,200 @@
       return [sy / n, sx / n];
     } catch (e) { return null; }
   }
+  function isFavorite(roll) {
+    return !!favoriteSet[roll];
+  }
+  function rebuildFavoriteSet() {
+    favoriteSet = {};
+    for (var i = 0; i < favoriteIds.length; i++) favoriteSet[favoriteIds[i]] = true;
+  }
+  function loadFavorites() {
+    try {
+      var raw = localStorage.getItem(FAVORITES_STORAGE_KEY);
+      if (!raw) return;
+      var parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return;
+      var seen = {};
+      for (var i = 0; i < parsed.length; i++) {
+        var id = String(parsed[i] == null ? '' : parsed[i]);
+        if (!id || seen[id]) continue;
+        seen[id] = true;
+        favoriteIds.push(id);
+      }
+    } catch (e) { /* private mode or corrupt storage: start with an empty list */ }
+    rebuildFavoriteSet();
+  }
+  function saveFavorites() {
+    try {
+      localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favoriteIds));
+    } catch (e) { /* ignore quota / private-mode failures */ }
+  }
+  function markerStyle(roll) {
+    return isFavorite(roll) ? FAV_STYLE : NORMAL_STYLE;
+  }
+  function styleMarker(marker) {
+    marker.setStyle(markerStyle(marker.rollNumber));
+    if (isFavorite(marker.rollNumber) && marker._map) marker.bringToFront();
+  }
+  function clusterIcon(clusterGroup) {
+    var children = clusterGroup.getAllChildMarkers();
+    var favCount = 0;
+    for (var i = 0; i < children.length; i++) {
+      if (isFavorite(children[i].rollNumber)) favCount++;
+    }
+    var count = clusterGroup.getChildCount();
+    var size = count < 10 ? 'small' : (count < 100 ? 'medium' : 'large');
+    var inner = '<div><span>' + count + '</span></div>';
+    var className = 'marker-cluster marker-cluster-' + size;
+    if (favCount) {
+      className += ' fav-cluster';
+      inner = '<span class="fav-cluster-wrap">' + inner +
+        '<span class="fav-cluster-star" title="Contains favorited parcels">★</span></span>';
+    }
+    return L.divIcon({ html: inner, className: className, iconSize: L.point(40, 40) });
+  }
+  function favoriteButtonHtml(marker) {
+    if (!marker.rollNumber) return '';
+    var on = isFavorite(marker.rollNumber);
+    return '<button type="button" class="fav-toggle" data-roll="' + escapeHtml(marker.rollNumber) +
+      '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
+      '<span class="fav-star" aria-hidden="true">' + (on ? '★' : '☆') + '</span>' +
+      (on ? 'Favorited' : 'Favorite') + '</button>';
+  }
   function popupHtml(marker) {
+    var hidden = !passesFilters(marker, currentFilter(), currentLotFilter());
     return '<div class="popup"><strong>' + escapeHtml(marker.address) + '</strong>' +
+      favoriteButtonHtml(marker) +
       '<div class="row"><span class="label">Type</span><span>' + escapeHtml(marker.useLabel) + '</span></div>' +
       '<div class="row"><span class="label">Year built</span><span>' + fmtYear(marker.yearBuilt) + '</span></div>' +
       '<div class="row"><span class="label">Land size</span><span>' + fmtNum(marker.landSize) + ' sq ft</span></div>' +
       '<div class="row"><span class="label">Assessed</span><span>' + fmtCAD(marker.assessedValue) + '</span></div>' +
       '<div class="row"><span class="label">Community</span><span>' + escapeHtml(marker.community) + '</span></div>' +
-      '<div class="row"><span class="label">Roll #</span><span>' + escapeHtml(marker.rollNumber) + '</span></div></div>';
+      '<div class="row"><span class="label">Roll #</span><span>' + escapeHtml(marker.rollNumber) + '</span></div>' +
+      (hidden ? '<p class="popup-hidden">Hidden by the current value or lot-size filter.</p>' : '') +
+      '</div>';
+  }
+  function renderFavorites() {
+    var n = favoriteIds.length;
+    favCountEl.textContent = String(n);
+    favOpenBtn.classList.toggle('has-favorites', n > 0);
+    if (!n) {
+      favList.innerHTML = '';
+      favEmpty.hidden = false;
+      syncFavoriteStars();
+      return;
+    }
+    favEmpty.hidden = true;
+    var filter = currentFilter();
+    var lotFilter = currentLotFilter();
+    var html = '';
+    for (var i = 0; i < n; i++) {
+      var roll = favoriteIds[i];
+      var marker = markersByRoll[roll];
+      html += '<li class="fav-item">';
+      if (!marker) {
+        html += '<div class="fav-item-title">Roll ' + escapeHtml(roll) + '</div>';
+        html += '<div class="fav-meta">' + (loadComplete ? 'Not in the current parcel set' : 'Loading parcel…') + '</div>';
+        html += '<div class="fav-actions"><button type="button" class="fav-remove" data-roll="' + escapeHtml(roll) +
+          '" aria-label="Remove roll ' + escapeHtml(roll) + ' from favorites">Remove</button></div>';
+      } else {
+        var shown = passesFilters(marker, filter, lotFilter);
+        html += '<div class="fav-item-title">' + escapeHtml(marker.address) + '</div>';
+        html += '<div class="fav-meta">' + escapeHtml(marker.community || '—') +
+          ' · ' + fmtYear(marker.yearBuilt) +
+          ' · ' + fmtNum(marker.landSize) + ' sq ft' +
+          ' · ' + fmtCAD(marker.assessedValue) + '</div>';
+        if (!shown) html += '<div class="fav-hidden-note">Hidden on the map by the current filters</div>';
+        html += '<div class="fav-actions">';
+        html += '<button type="button" class="fav-jump" data-roll="' + escapeHtml(roll) +
+          '" aria-label="Show ' + escapeHtml(marker.address) + ' on the map">Show on map</button>';
+        html += '<button type="button" class="fav-remove" data-roll="' + escapeHtml(roll) +
+          '" aria-label="Remove ' + escapeHtml(marker.address) + ' from favorites">Remove</button>';
+        html += '</div>';
+      }
+      html += '</li>';
+    }
+    var scroll = favList.scrollTop;
+    favList.innerHTML = html;
+    favList.scrollTop = scroll;
+    syncFavoriteStars();
+  }
+  function starIcon() {
+    return L.divIcon({
+      className: 'fav-pin',
+      html: '<span aria-hidden="true">★</span>',
+      iconSize: [26, 26],
+      iconAnchor: [13, 13],
+      popupAnchor: [0, -14]
+    });
+  }
+  function syncFavoriteStars() {
+    favoriteStars.clearLayers();
+    var filter = currentFilter();
+    var lotFilter = currentLotFilter();
+    for (var i = 0; i < favoriteIds.length; i++) {
+      var marker = markersByRoll[favoriteIds[i]];
+      if (!marker || !passesFilters(marker, filter, lotFilter)) continue;
+      var pin = L.marker(marker.getLatLng(), {
+        pane: 'favorites',
+        icon: starIcon(),
+        keyboard: false,
+        bubblingMouseEvents: false,
+        title: marker.address || 'Favorited parcel'
+      });
+      pin.rollNumber = marker.rollNumber;
+      pin.on('click', function (ev) {
+        if (ev.originalEvent) L.DomEvent.stopPropagation(ev.originalEvent);
+        focusFavorite(ev.target.rollNumber);
+      });
+      favoriteStars.addLayer(pin);
+    }
+  }
+  function refreshActivePopup(roll) {
+    if (!activePopup || !activePopup.getElement) return;
+    var el = activePopup.getElement();
+    if (!el) return;
+    var btn = el.querySelector('.fav-toggle');
+    if (!btn || btn.getAttribute('data-roll') !== roll) return;
+    var marker = markersByRoll[roll];
+    if (!marker) return;
+    if (typeof activePopup.getContent() === 'function') activePopup.update();
+    else activePopup.setContent(popupHtml(marker));
+  }
+  function refreshFavoriteMarkers(roll) {
+    for (var i = 0; i < markers.length; i++) {
+      if (markers[i].rollNumber === roll) styleMarker(markers[i]);
+    }
+    cluster.refreshClusters();
+  }
+  function toggleFavorite(roll) {
+    roll = String(roll == null ? '' : roll);
+    if (!roll) return;
+    var idx = favoriteIds.indexOf(roll);
+    if (idx >= 0) favoriteIds.splice(idx, 1);
+    else favoriteIds.unshift(roll);
+    rebuildFavoriteSet();
+    saveFavorites();
+    refreshFavoriteMarkers(roll);
+    renderFavorites();
+    refreshActivePopup(roll);
+  }
+  function setFavPanel(open) {
+    favPanel.hidden = !open;
+    favOpenBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  function focusFavorite(roll) {
+    var marker = markersByRoll[String(roll == null ? '' : roll)];
+    if (!marker) return;
+    keepView = true;
+    if (narrowMap.matches) setFavPanel(false);
+    if (passesFilters(marker, currentFilter(), currentLotFilter())) {
+      cluster.zoomToShowLayer(marker, function () { marker.openPopup(); });
+      return;
+    }
+    var ll = marker.getLatLng();
+    map.setView(ll, Math.max(map.getZoom(), 17));
+    L.popup({ maxWidth: 320, autoPan: true }).setLatLng(ll).setContent(popupHtml(marker)).openOn(map);
   }
   function lotStyles() {
     return imageryBase
@@ -476,6 +796,7 @@
       countEl.textContent = fmtNum(visibleCount) + ' of ' + fmtNum(markers.length) + ' loaded';
     }
     if (lotLinesOn) syncLotLines();
+    renderFavorites();
   }
   function formatBoundInput(el) {
     var v = readBound(el.value);
@@ -543,6 +864,56 @@
   window.addEventListener('resize', function () { map.invalidateSize(); });
   requestAnimationFrame(function () { map.invalidateSize(); });
 
+  map.on('dragstart', function () { keepView = true; });
+  map.on('zoomstart', function (e) {
+    if (e.originalEvent) keepView = true;
+  });
+  map.on('popupopen', function (e) {
+    activePopup = e.popup;
+    var el = e.popup.getElement();
+    if (!el || el._favBound) return;
+    el._favBound = true;
+    el.addEventListener('click', function (ev) {
+      var toggle = ev.target.closest && ev.target.closest('.fav-toggle');
+      if (!toggle) return;
+      ev.preventDefault();
+      toggleFavorite(toggle.getAttribute('data-roll'));
+    });
+  });
+  map.on('popupclose', function (e) {
+    if (activePopup === e.popup) activePopup = null;
+  });
+  favOpenBtn.addEventListener('click', function () {
+    setFavPanel(favPanel.hidden);
+  });
+  document.getElementById('fav-close').addEventListener('click', function () {
+    setFavPanel(false);
+    favOpenBtn.focus();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !favPanel.hidden) {
+      setFavPanel(false);
+      favOpenBtn.focus();
+    }
+  });
+  document.addEventListener('click', function (e) {
+    var target = e.target;
+    if (!target || !target.closest) return;
+    var jump = target.closest('.fav-jump');
+    if (jump) {
+      e.preventDefault();
+      focusFavorite(jump.getAttribute('data-roll'));
+      return;
+    }
+    var remove = target.closest('.fav-remove');
+    if (remove) {
+      e.preventDefault();
+      toggleFavorite(remove.getAttribute('data-roll'));
+    }
+  });
+  loadFavorites();
+  renderFavorites();
+
   async function run() {
     var offset = 0;
     setProgress(0);
@@ -561,18 +932,18 @@
           var c = centroid(r.multipolygon);
           if (!c) continue;
           bounds.push(c);
-          var marker = L.circleMarker(c, {
-            radius: 5, color: '#1a365d', weight: 1, fillColor: '#3182ce', fillOpacity: 0.75
-          });
+          var roll = r.roll_number == null ? '' : String(r.roll_number);
+          var marker = L.circleMarker(c, markerStyle(roll));
           marker.address = r.address;
           marker.useLabel = USE_LABELS[r.sub_property_use] || r.sub_property_use;
           marker.landSize = parseSize(r.land_size_sf);
           marker.community = r.comm_name;
-          marker.rollNumber = r.roll_number;
+          marker.rollNumber = roll;
           marker.assessedValue = parseMoney(r.assessed_value);
           marker.yearBuilt = parseYear(r.year_of_construction);
           marker.multipolygon = r.multipolygon;
-          marker.bindPopup(popupHtml(marker), { maxWidth: 320 });
+          marker.bindPopup(function () { return popupHtml(marker); }, { maxWidth: 320 });
+          if (roll && !markersByRoll[roll]) markersByRoll[roll] = marker;
           markers.push(marker);
         }
         offset += rows.length;
@@ -584,11 +955,12 @@
       loadComplete = true;
       setProgress(markers.length);
       applyFilter(false);
-      if (bounds.length) map.fitBounds(bounds, { padding: [24, 24] });
+      if (bounds.length && !keepView) map.fitBounds(bounds, { padding: [24, 24] });
     } catch (e) {
       loadComplete = true;
       countEl.textContent = 'Load failed';
       rangeEl.textContent = e.message + ' (try refreshing)';
+      renderFavorites();
       console.error(e);
     }
   }
