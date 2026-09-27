@@ -11,14 +11,16 @@
     html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
     body { display: flex; flex-direction: column; }
     header {
-      flex: 0 0 auto; z-index: 1000; background: #1a365d; color: #fff;
+      position: relative; flex: 0 0 auto; z-index: 1000; background: #1a365d; color: #fff;
       display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
       gap: 10px 20px; padding: 8px 16px; box-sizing: border-box;
       box-shadow: 0 2px 6px rgba(0,0,0,.25);
     }
     header h1 { font-size: 15px; font-weight: 600; margin: 0; line-height: 1.3; }
     header p { font-size: 12px; margin: 2px 0 0; opacity: .85; }
-    .titles { flex: 1 1 240px; min-width: 0; }
+    .brand { flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; }
+    .titles { min-width: 0; }
+    .action-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; max-width: 100%; }
     .filters {
       display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end;
       gap: 8px 18px; flex: 3 1 680px; min-width: 0;
@@ -51,13 +53,28 @@
     }
     #clear-filter:disabled, #clear-lot:disabled { opacity: .4; cursor: default; }
     #clear-filter:not(:disabled):hover, #clear-lot:not(:disabled):hover { background: rgba(255,255,255,.12); }
-    #fav-open {
-      display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;
+    #fav-open, #filters-toggle {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
       background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.55);
       border-radius: 4px; padding: 8px 12px; min-height: 40px; font: inherit; font-size: 13px;
       font-weight: 600; cursor: pointer;
     }
-    #fav-open:hover { background: rgba(255,255,255,.12); }
+    #filters-toggle { display: none; }
+    #fav-open:hover, #filters-toggle:hover { background: rgba(255,255,255,.12); }
+    #filters-toggle[aria-expanded="true"] { background: rgba(255,255,255,.16); }
+    #filters-toggle.is-active { border-color: #bee3f8; }
+    #filters-toggle::after {
+      content: ""; width: 7px; height: 7px; margin-top: -3px; flex: 0 0 auto;
+      border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
+      transform: rotate(45deg);
+    }
+    #filters-toggle[aria-expanded="true"]::after { margin-top: 3px; transform: rotate(-135deg); }
+    .filters-badge {
+      display: inline-block; min-width: 1.25em; padding: 0 6px; border-radius: 999px;
+      background: #ebf8ff; color: #1a365d; font-variant-numeric: tabular-nums; text-align: center;
+    }
+    .filters-badge[hidden] { display: none; }
+    #filters-done { display: none; }
     #fav-open.has-favorites, #fav-open[aria-expanded="true"] {
       background: #b7791f; border-color: #ecc94b; color: #fff;
     }
@@ -156,8 +173,15 @@
       box-shadow: 0 1px 4px rgba(0,0,0,.45);
     }
     #fav-open:focus-visible, #fav-close:focus-visible, .fav-toggle:focus-visible,
-    .fav-jump:focus-visible, .fav-remove:focus-visible {
+    .fav-jump:focus-visible, .fav-remove:focus-visible,
+    #filters-toggle:focus-visible, #filters-done:focus-visible, .layers-dismiss:focus-visible {
       outline: 2px solid #ecc94b; outline-offset: 2px;
+    }
+    .layers-dismiss { display: none; }
+    #filters-backdrop {
+      display: none; position: absolute; inset: 0; z-index: 1100; width: 100%; height: 100%;
+      background: rgba(26, 54, 93, .28); border: 0; padding: 0; margin: 0; cursor: pointer;
+      appearance: none; -webkit-appearance: none;
     }
     .leaflet-control-layers {
       border: none; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,.3);
@@ -175,11 +199,33 @@
       position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
       overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
     }
-    @media (max-width: 720px) {
-      .filters { justify-content: stretch; flex-basis: 100%; }
+    /* Phones, and short landscape phones that are still wider than 768px. */
+    @media (max-width: 767px), (max-height: 500px) and (orientation: landscape) and (max-width: 1024px) {
+      header h1 { font-size: 14px; }
+      .brand { flex: 1 1 100%; }
+      .action-row { width: 100%; }
+      #filters-toggle { display: inline-flex; flex: 1 1 0; min-height: 44px; }
+      #fav-open { flex: 1 1 0; min-height: 44px; }
+      #clear-filter, #clear-lot, #filters-done { min-height: 44px; }
+      .filters { justify-content: stretch; flex: none; }
+      header.filters-collapsed .filters { display: none; }
+      body.filters-open .filters {
+        display: flex; position: absolute; top: 100%; left: 0; right: 0; width: auto;
+        max-height: min(70vh, 440px); overflow: auto; -webkit-overflow-scrolling: touch;
+        margin: 0; padding: 10px 12px 12px; box-sizing: border-box;
+        background: #1a365d; border-radius: 0 0 10px 10px;
+        box-shadow: 0 10px 24px rgba(0,0,0,.35); z-index: 2;
+      }
+      body.filters-open #filters-backdrop { display: block; }
       .value-filter, .lot-filter { justify-content: stretch; flex-basis: 100%; }
       .filter-label { flex: 1 1 100%; }
       #clear-filter, #clear-lot { flex: 0 0 auto; }
+      #filters-done {
+        display: inline-flex; align-items: center; justify-content: center;
+        flex: 1 1 100%; background: #fff; color: #1a365d; border: 0; border-radius: 4px;
+        padding: 8px 12px; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+      }
+      #filters-done:hover { background: #ebf8ff; }
       .legend { max-width: min(210px, calc(58vw - 16px)); }
       #fav-panel {
         top: auto; bottom: 8px; left: 8px; right: 8px; width: auto;
@@ -188,21 +234,41 @@
       }
       .leaflet-control-attribution { max-width: min(42vw, 190px); font-size: 10px; }
       .leaflet-control-layers-expanded { max-width: calc(100vw - 56px); }
+      .leaflet-control-layers-toggle { width: 44px; height: 44px; background-size: 26px 26px; }
+      .leaflet-control-layers label {
+        display: flex; align-items: center; gap: 8px; min-height: 40px; font-size: 15px;
+      }
+      .leaflet-control-layers-selector { width: 20px; height: 20px; margin: 0; }
+      .layers-dismiss {
+        display: flex; align-items: center; justify-content: center; width: 100%;
+        box-sizing: border-box; margin: 0 0 8px; min-height: 40px; border: 0; border-radius: 4px;
+        background: #1a365d; color: #fff; font: inherit; font-size: 14px; font-weight: 600;
+        cursor: pointer;
+      }
+      .layers-dismiss:hover { background: #2a4365; }
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="titles">
-      <h1>Calgary SW — Single-family homes/lots with land size ≥ 10,000 sq ft</h1>
-      <p>Detached, acreage &amp; vacant lots only · multifamily/condo excluded</p>
-      <button type="button" id="fav-open" aria-expanded="false" aria-controls="fav-panel">
-        <span aria-hidden="true">★</span>
-        <span>Favorites</span>
-        <span id="fav-count" class="fav-count">0</span>
-      </button>
+  <header id="app-header" class="filters-collapsed">
+    <div class="brand">
+      <div class="titles">
+        <h1>Calgary SW — Single-family homes/lots with land size ≥ 10,000 sq ft</h1>
+        <p>Detached, acreage &amp; vacant lots only · multifamily/condo excluded</p>
+      </div>
+      <div class="action-row">
+        <button type="button" id="filters-toggle" aria-expanded="false" aria-controls="filters">
+          <span>Filters</span>
+          <span id="filters-badge" class="filters-badge" hidden>0</span>
+        </button>
+        <button type="button" id="fav-open" aria-expanded="false" aria-controls="fav-panel">
+          <span aria-hidden="true">★</span>
+          <span>Favorites</span>
+          <span id="fav-count" class="fav-count">0</span>
+        </button>
+      </div>
     </div>
-    <div class="filters">
+    <div class="filters" id="filters">
       <form id="value-filter" class="value-filter" autocomplete="off">
         <span class="filter-label" id="value-filter-label">Assessed value</span>
         <div class="bounds" role="group" aria-labelledby="value-filter-label">
@@ -235,9 +301,11 @@
         </div>
         <button type="button" id="clear-lot" disabled>Clear</button>
       </form>
+      <button type="button" id="filters-done">Done</button>
     </div>
   </header>
   <div class="stage">
+    <button type="button" id="filters-backdrop" aria-label="Dismiss filters"></button>
     <div id="map"></div>
     <div class="legend">
       <div id="range">All assessed values</div>
@@ -299,19 +367,34 @@
   var baseLayers = { Streets: streets, Satellite: satellite, Hybrid: hybrid };
   // Empty until the overlay is turned on, so the first paint stays markers-only.
   var lotLines = L.layerGroup();
-  var narrowMap = window.matchMedia('(max-width: 720px)');
+  // Keep this query in sync with the narrow-screen CSS block.
+  var NARROW_QUERY = '(max-width: 767px), (max-height: 500px) and (orientation: landscape) and (max-width: 1024px)';
+  var narrowMap = window.matchMedia(NARROW_QUERY);
   var layersControl = L.control.layers(baseLayers, { 'Lot lines': lotLines }, {
     position: 'topright',
     collapsed: narrowMap.matches
   }).addTo(map);
   var layersToggle = layersControl.getContainer().querySelector('a');
-  if (layersToggle) layersToggle.title = 'Map layers';
-  function syncBaseLayerControl() {
-    if (narrowMap.matches) layersControl.collapse();
-    else layersControl.expand();
+  if (layersToggle) {
+    layersToggle.title = 'Basemap and lot lines';
+    layersToggle.setAttribute('aria-label', 'Basemap and lot lines');
   }
-  if (narrowMap.addEventListener) narrowMap.addEventListener('change', syncBaseLayerControl);
-  else if (narrowMap.addListener) narrowMap.addListener(syncBaseLayerControl);
+  var layersSection = layersControl.getContainer().querySelector('section');
+  if (layersSection) {
+    var layersClose = document.createElement('button');
+    layersClose.type = 'button';
+    layersClose.className = 'layers-dismiss';
+    layersClose.textContent = 'Close';
+    layersClose.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      layersControl.collapse();
+    });
+    layersSection.insertBefore(layersClose, layersSection.firstChild);
+  }
+  map.on('click', function () {
+    if (narrowMap.matches) layersControl.collapse();
+  });
   map.on('overlayadd', function (e) {
     if (e.layer !== lotLines) return;
     lotLinesOn = true;
@@ -375,6 +458,10 @@
   var markersByRoll = {};
   var activePopup = null;
   var keepView = false;
+  var headerEl = document.getElementById('app-header');
+  var filtersToggle = document.getElementById('filters-toggle');
+  var filtersBadge = document.getElementById('filters-badge');
+  var filtersBackdrop = document.getElementById('filters-backdrop');
   var favOpenBtn = document.getElementById('fav-open');
   var favPanel = document.getElementById('fav-panel');
   var favList = document.getElementById('fav-list');
@@ -794,8 +881,51 @@
     lotRangeEl.textContent = lotRangeLabel(lotFilter);
     clearBtn.disabled = filter.min == null && filter.max == null;
     clearLotBtn.disabled = lotFilter.min == null && lotFilter.max == null;
+    syncFiltersToggle(filter, lotFilter);
     if (lotLinesOn) syncLotLines();
     renderFavorites();
+  }
+  function activeFilterGroups(filter, lotFilter) {
+    var valueOn = filter.min != null || filter.max != null;
+    var lotOn = lotFilter.min != null || lotFilter.max != null;
+    return (valueOn ? 1 : 0) + (lotOn ? 1 : 0);
+  }
+  function syncFiltersToggle(filter, lotFilter) {
+    var n = activeFilterGroups(filter, lotFilter);
+    filtersBadge.hidden = n === 0;
+    filtersBadge.textContent = String(n);
+    filtersToggle.classList.toggle('is-active', n > 0);
+    filtersToggle.setAttribute('aria-label', n ? ('Filters, ' + n + ' active') : 'Filters');
+  }
+  function setFiltersOpen(open) {
+    if (!narrowMap.matches) {
+      headerEl.classList.remove('filters-collapsed');
+      document.body.classList.remove('filters-open');
+      filtersToggle.setAttribute('aria-expanded', 'true');
+      return;
+    }
+    headerEl.classList.toggle('filters-collapsed', !open);
+    document.body.classList.toggle('filters-open', !!open);
+    filtersToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) {
+      setFavPanel(false);
+      layersControl.collapse();
+    }
+    map.invalidateSize();
+  }
+  function syncNarrowLayout() {
+    if (narrowMap.matches) {
+      headerEl.classList.add('filters-collapsed');
+      document.body.classList.remove('filters-open');
+      filtersToggle.setAttribute('aria-expanded', 'false');
+      layersControl.collapse();
+    } else {
+      headerEl.classList.remove('filters-collapsed');
+      document.body.classList.remove('filters-open');
+      filtersToggle.setAttribute('aria-expanded', 'true');
+      layersControl.expand();
+    }
+    map.invalidateSize();
   }
   function formatBoundInput(el) {
     var v = readBound(el.value);
@@ -833,6 +963,7 @@
     formatBoundInput(minEl);
     formatBoundInput(maxEl);
     applyFilter(true);
+    if (narrowMap.matches) setFiltersOpen(false);
   });
   minLotEl.addEventListener('input', scheduleFilter);
   maxLotEl.addEventListener('input', scheduleFilter);
@@ -858,6 +989,7 @@
     formatBoundInput(minLotEl);
     formatBoundInput(maxLotEl);
     applyFilter(true);
+    if (narrowMap.matches) setFiltersOpen(false);
   });
 
   window.addEventListener('resize', function () { map.invalidateSize(); });
@@ -882,19 +1014,47 @@
   map.on('popupclose', function (e) {
     if (activePopup === e.popup) activePopup = null;
   });
+  filtersToggle.addEventListener('click', function () {
+    setFiltersOpen(headerEl.classList.contains('filters-collapsed'));
+  });
+  document.getElementById('filters-done').addEventListener('click', function () {
+    setFiltersOpen(false);
+    filtersToggle.focus();
+  });
+  filtersBackdrop.addEventListener('click', function () {
+    setFiltersOpen(false);
+    filtersToggle.focus();
+  });
   favOpenBtn.addEventListener('click', function () {
-    setFavPanel(favPanel.hidden);
+    var open = favPanel.hidden;
+    if (open) {
+      setFiltersOpen(false);
+      if (narrowMap.matches) layersControl.collapse();
+    }
+    setFavPanel(open);
   });
   document.getElementById('fav-close').addEventListener('click', function () {
     setFavPanel(false);
     favOpenBtn.focus();
   });
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && !favPanel.hidden) {
+    if (e.key !== 'Escape') return;
+    if (!favPanel.hidden) {
       setFavPanel(false);
       favOpenBtn.focus();
+      return;
     }
+    if (narrowMap.matches && !headerEl.classList.contains('filters-collapsed')) {
+      setFiltersOpen(false);
+      filtersToggle.focus();
+      return;
+    }
+    if (narrowMap.matches) layersControl.collapse();
   });
+  if (narrowMap.addEventListener) narrowMap.addEventListener('change', syncNarrowLayout);
+  else if (narrowMap.addListener) narrowMap.addListener(syncNarrowLayout);
+  syncNarrowLayout();
+  syncFiltersToggle(currentFilter(), currentLotFilter());
   document.addEventListener('click', function (e) {
     var target = e.target;
     if (!target || !target.closest) return;
