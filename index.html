@@ -1,4 +1,1080 @@
 <!DOCTYPE html>
 <html lang="en-CA">
-PLACEHOLDER
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calgary SW — Single-family parcels ≥ 10,000 sq ft</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <style>
+    html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    body { display: flex; flex-direction: column; }
+    header {
+      position: relative; flex: 0 0 auto; z-index: 1000; background: #1a365d; color: #fff;
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      gap: 4px 12px; padding: 4px 12px; box-sizing: border-box;
+      box-shadow: 0 1px 4px rgba(0,0,0,.22);
+    }
+    .action-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; flex: 0 0 auto; }
+    .filters {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end;
+      gap: 8px 18px; flex: 3 1 680px; min-width: 0;
+    }
+    .value-filter, .lot-filter {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+      margin: 0; flex: 1 1 280px; justify-content: flex-end; min-width: 0;
+    }
+    .filter-label {
+      font-size: 11px; font-weight: 600; letter-spacing: .04em;
+      text-transform: uppercase; opacity: .9; white-space: nowrap;
+    }
+    .bounds { display: flex; align-items: center; gap: 6px; flex: 1 1 220px; min-width: 0; }
+    .money {
+      display: flex; align-items: center; gap: 2px; flex: 1 1 0; min-width: 0;
+      background: #fff; color: #1a365d; border-radius: 4px; padding: 0 8px;
+      box-sizing: border-box; min-height: 36px;
+    }
+    .money .prefix { font-size: 14px; font-weight: 600; }
+    .money input {
+      width: 100%; min-width: 0; border: 0; background: transparent; color: #1a365d;
+      font: inherit; font-size: 15px; padding: 4px 0; outline: none;
+    }
+    .money input::placeholder { color: #718096; }
+    .dash { opacity: .85; flex: 0 0 auto; }
+    #clear-filter, #clear-lot {
+      background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.55);
+      border-radius: 4px; padding: 4px 10px; min-height: 36px; font: inherit; font-size: 13px;
+      cursor: pointer;
+    }
+    #clear-filter:disabled, #clear-lot:disabled { opacity: .4; cursor: default; }
+    #clear-filter:not(:disabled):hover, #clear-lot:not(:disabled):hover { background: rgba(255,255,255,.12); }
+    #fav-open, #filters-toggle {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.55);
+      border-radius: 4px; padding: 4px 10px; min-height: 36px; font: inherit; font-size: 13px;
+      font-weight: 600; cursor: pointer;
+    }
+    #filters-toggle { display: none; }
+    #fav-open:hover, #filters-toggle:hover { background: rgba(255,255,255,.12); }
+    #filters-toggle[aria-expanded="true"] { background: rgba(255,255,255,.16); }
+    #filters-toggle.is-active { border-color: #bee3f8; }
+    #filters-toggle::after {
+      content: ""; width: 7px; height: 7px; margin-top: -3px; flex: 0 0 auto;
+      border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
+      transform: rotate(45deg);
+    }
+    #filters-toggle[aria-expanded="true"]::after { margin-top: 3px; transform: rotate(-135deg); }
+    .filters-badge {
+      display: inline-block; min-width: 1.25em; padding: 0 6px; border-radius: 999px;
+      background: #ebf8ff; color: #1a365d; font-variant-numeric: tabular-nums; text-align: center;
+    }
+    .filters-badge[hidden] { display: none; }
+    #filters-done { display: none; }
+    #fav-open.has-favorites, #fav-open[aria-expanded="true"] {
+      background: #b7791f; border-color: #ecc94b; color: #fff;
+    }
+    #fav-open.has-favorites:hover, #fav-open[aria-expanded="true"]:hover { background: #975a16; }
+    .fav-count {
+      display: inline-block; min-width: 1.25em; padding: 0 6px; border-radius: 999px;
+      background: rgba(0,0,0,.18); font-variant-numeric: tabular-nums; text-align: center;
+    }
+    .stage { position: relative; z-index: 1; flex: 1 1 auto; min-height: 0; }
+    #map { height: 100%; width: 100%; }
+    #bar {
+      position: absolute; top: 0; left: 0; z-index: 400; height: 3px; width: 0;
+      background: #2b6cb0; pointer-events: none; transition: width .2s;
+    }
+    #bar[hidden] { display: none; }
+    .filter-warn, .load-error {
+      flex: 1 1 100%; margin: 0; font-size: 12px; line-height: 1.3; font-weight: 600; color: #fed7d7;
+    }
+    .filter-warn[hidden], .load-error[hidden] { display: none; }
+    .popup { font-size: 13px; line-height: 1.45; min-width: 200px; }
+    .popup strong { display: block; font-size: 14px; margin-bottom: 6px; }
+    .row { display: flex; justify-content: space-between; gap: 12px; }
+    .label { color: #555; }
+    body.imagery-base .marker-cluster:not(.fav-cluster) { background-color: rgba(15, 23, 42, 0.55); }
+    body.imagery-base .marker-cluster:not(.fav-cluster) div {
+      background-color: rgba(255, 255, 255, 0.95); color: #0f172a;
+    }
+    #fav-panel {
+      position: absolute; z-index: 1200; top: 10px; left: 54px;
+      width: min(360px, calc(100% - 66px)); max-height: calc(100% - 20px);
+      display: flex; flex-direction: column; overflow: hidden;
+      background: rgba(255,255,255,.98); color: #1a202c; border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.28);
+    }
+    #fav-panel[hidden] { display: none; }
+    .fav-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 10px 12px; background: #1a365d; color: #fff;
+    }
+    .fav-head h2 { margin: 0; font-size: 15px; font-weight: 600; }
+    #fav-close {
+      background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.55);
+      border-radius: 4px; padding: 6px 10px; min-height: 36px; font: inherit; font-size: 13px;
+      cursor: pointer;
+    }
+    #fav-close:hover { background: rgba(255,255,255,.12); }
+    .fav-empty { margin: 0; padding: 16px 12px 18px; font-size: 13px; line-height: 1.45; color: #2d3748; }
+    #fav-list { list-style: none; margin: 0; padding: 0; overflow: auto; min-height: 0; -webkit-overflow-scrolling: touch; }
+    .fav-item { padding: 10px 12px 12px; border-bottom: 1px solid #edf2f7; }
+    .fav-item-title { font-weight: 600; font-size: 14px; line-height: 1.35; }
+    .fav-meta { margin-top: 3px; font-size: 12px; line-height: 1.4; color: #4a5568; }
+    .fav-hidden-note { margin-top: 4px; font-size: 12px; line-height: 1.35; color: #975a16; }
+    .fav-actions { display: flex; gap: 8px; margin-top: 8px; }
+    .fav-actions button {
+      flex: 1 1 0; min-height: 44px; font: inherit; font-size: 13px; font-weight: 600;
+      border-radius: 4px; cursor: pointer;
+    }
+    .fav-jump { background: #1a365d; color: #fff; border: 0; }
+    .fav-jump:hover { background: #2a4365; }
+    .fav-remove { background: #fff; color: #1a365d; border: 1px solid #cbd5e0; }
+    .fav-remove:hover { background: #fff5f5; color: #9b2c2c; border-color: #feb2b2; }
+    .fav-toggle {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      width: 100%; box-sizing: border-box; margin: 0 0 8px; min-height: 44px;
+      border-radius: 6px; border: 1px solid #d69e2e; background: #fffaf0; color: #975a16;
+      font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    .fav-toggle:hover { background: #feebc8; }
+    .fav-toggle[aria-pressed="true"] { background: #d69e2e; border-color: #b7791f; color: #1a202c; }
+    .fav-toggle[aria-pressed="true"]:hover { background: #ecc94b; }
+    .fav-star { font-size: 16px; line-height: 1; }
+    .popup-hidden { margin: 8px 0 0; color: #975a16; font-size: 12px; }
+    .fav-cluster-wrap { position: relative; display: block; width: 40px; height: 40px; }
+    .marker-cluster.fav-cluster { background-color: rgba(214, 158, 46, 0.55); }
+    .marker-cluster.fav-cluster div { background-color: rgba(146, 90, 16, 0.92); color: #fff; }
+    .marker-cluster .fav-cluster-star {
+      position: absolute; z-index: 2; top: -3px; right: -3px; width: 18px; height: 18px;
+      border-radius: 50%; background: #1a202c; color: #faf089; font-size: 12px; line-height: 18px;
+      text-align: center; box-shadow: 0 0 0 1px #fff; pointer-events: none;
+    }
+    .leaflet-div-icon.fav-pin { background: transparent; border: none; }
+    .fav-pin span {
+      display: flex; align-items: center; justify-content: center; box-sizing: border-box;
+      width: 26px; height: 26px; border-radius: 50%; background: #d69e2e; color: #1a202c;
+      border: 2px solid #744210; font-size: 15px; line-height: 1;
+      box-shadow: 0 1px 4px rgba(0,0,0,.45);
+    }
+    #fav-open:focus-visible, #fav-close:focus-visible, .fav-toggle:focus-visible,
+    .fav-jump:focus-visible, .fav-remove:focus-visible,
+    #filters-toggle:focus-visible, #filters-done:focus-visible, .layers-dismiss:focus-visible {
+      outline: 2px solid #ecc94b; outline-offset: 2px;
+    }
+    .layers-dismiss { display: none; }
+    #filters-backdrop {
+      display: none; position: absolute; inset: 0; z-index: 1100; width: 100%; height: 100%;
+      background: rgba(26, 54, 93, .28); border: 0; padding: 0; margin: 0; cursor: pointer;
+      appearance: none; -webkit-appearance: none;
+    }
+    .leaflet-control-layers {
+      border: none; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,.3);
+    }
+    .leaflet-control-layers-expanded {
+      padding: 8px 10px 8px 8px; color: #1a365d; font-size: 13px; line-height: 1.45;
+    }
+    .leaflet-control-attribution {
+      max-width: min(420px, calc(100vw - 36px));
+      white-space: normal; line-height: 1.35;
+    }
+    .leaflet-lotLines-pane { pointer-events: none; }
+    .sr {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+    @media (max-width: 767px), (max-height: 500px) and (orientation: landscape) and (max-width: 1024px) {
+      header { padding: 4px 10px; gap: 4px 8px; }
+      .action-row { width: 100%; }
+      .money { min-height: 44px; }
+      .money input { font-size: 16px; padding: 8px 0; }
+      #filters-toggle { display: inline-flex; flex: 1 1 0; min-height: 44px; }
+      #fav-open { flex: 1 1 0; min-height: 44px; }
+      #clear-filter, #clear-lot, #filters-done { min-height: 44px; }
+      .filters { justify-content: stretch; flex: none; }
+      header.filters-collapsed .filters { display: none; }
+      body.filters-open .filters {
+        display: flex; position: absolute; top: 100%; left: 0; right: 0; width: auto;
+        max-height: min(70vh, 440px); overflow: auto; -webkit-overflow-scrolling: touch;
+        margin: 0; padding: 10px 12px 12px; box-sizing: border-box;
+        background: #1a365d; border-radius: 0 0 10px 10px;
+        box-shadow: 0 10px 24px rgba(0,0,0,.35); z-index: 2;
+      }
+      body.filters-open #filters-backdrop { display: block; }
+      .value-filter, .lot-filter { justify-content: stretch; flex-basis: 100%; }
+      .filter-label { flex: 1 1 100%; }
+      #clear-filter, #clear-lot { flex: 0 0 auto; }
+      #filters-done {
+        display: inline-flex; align-items: center; justify-content: center;
+        flex: 1 1 100%; background: #fff; color: #1a365d; border: 0; border-radius: 4px;
+        padding: 8px 12px; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+      }
+      #filters-done:hover { background: #ebf8ff; }
+      #fav-panel {
+        top: auto; bottom: 8px; left: 8px; right: 8px; width: auto;
+        max-height: min(62vh, calc(100% - 16px));
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+      .leaflet-control-attribution { max-width: min(42vw, 190px); font-size: 10px; }
+      .leaflet-control-layers-expanded { max-width: calc(100vw - 56px); }
+      .leaflet-control-layers-toggle { width: 44px; height: 44px; background-size: 26px 26px; }
+      .leaflet-control-layers label {
+        display: flex; align-items: center; gap: 8px; min-height: 40px; font-size: 15px;
+      }
+      .leaflet-control-layers-selector { width: 20px; height: 20px; margin: 0; }
+      .layers-dismiss {
+        display: flex; align-items: center; justify-content: center; width: 100%;
+        box-sizing: border-box; margin: 8px 0 0; min-height: 40px; border: 0; border-radius: 4px;
+        background: #1a365d; color: #fff; font: inherit; font-size: 14px; font-weight: 600;
+        cursor: pointer;
+      }
+      .layers-dismiss:hover { background: #2a4365; }
+    }
+  </style>
+</head>
+<body>
+  <header id="app-header" class="filters-collapsed">
+    <div class="action-row">
+      <button type="button" id="filters-toggle" aria-expanded="false" aria-controls="filters">
+        <span>Filters</span>
+        <span id="filters-badge" class="filters-badge" hidden>0</span>
+      </button>
+      <button type="button" id="fav-open" aria-expanded="false" aria-controls="fav-panel">
+        <span aria-hidden="true">★</span>
+        <span>Favorites</span>
+        <span id="fav-count" class="fav-count">0</span>
+      </button>
+    </div>
+    <div class="filters" id="filters">
+      <form id="value-filter" class="value-filter" autocomplete="off">
+        <span class="filter-label" id="value-filter-label">Assessed value</span>
+        <div class="bounds" role="group" aria-labelledby="value-filter-label">
+          <label class="money">
+            <span class="sr">Minimum assessed value in Canadian dollars</span>
+            <span class="prefix" aria-hidden="true">$</span>
+            <input id="min-value" type="text" inputmode="numeric" placeholder="No min" aria-label="Minimum assessed value in Canadian dollars">
+          </label>
+          <span class="dash" aria-hidden="true">–</span>
+          <label class="money">
+            <span class="sr">Maximum assessed value in Canadian dollars</span>
+            <span class="prefix" aria-hidden="true">$</span>
+            <input id="max-value" type="text" inputmode="numeric" placeholder="No max" aria-label="Maximum assessed value in Canadian dollars">
+          </label>
+        </div>
+        <button type="button" id="clear-filter" disabled>Clear</button>
+      </form>
+      <form id="lot-filter" class="lot-filter" autocomplete="off">
+        <span class="filter-label" id="lot-filter-label">Lot size (sq ft)</span>
+        <div class="bounds" role="group" aria-labelledby="lot-filter-label">
+          <label class="money">
+            <span class="sr">Minimum lot size in square feet</span>
+            <input id="min-lot" type="text" inputmode="numeric" placeholder="No min" aria-label="Minimum lot size in square feet">
+          </label>
+          <span class="dash" aria-hidden="true">–</span>
+          <label class="money">
+            <span class="sr">Maximum lot size in square feet</span>
+            <input id="max-lot" type="text" inputmode="numeric" placeholder="No max" aria-label="Maximum lot size in square feet">
+          </label>
+        </div>
+        <button type="button" id="clear-lot" disabled>Clear</button>
+      </form>
+      <button type="button" id="filters-done">Done</button>
+    </div>
+    <p id="warn" class="filter-warn" role="status" hidden>Minimum is above maximum.</p>
+    <p id="load-error" class="load-error" role="alert" hidden></p>
+  </header>
+  <div class="stage">
+    <button type="button" id="filters-backdrop" aria-label="Dismiss filters"></button>
+    <div id="map"></div>
+    <div id="bar" hidden></div>
+    <aside id="fav-panel" hidden aria-labelledby="fav-heading">
+      <div class="fav-head">
+        <h2 id="fav-heading">Favorites</h2>
+        <button type="button" id="fav-close">Close</button>
+      </div>
+      <p id="fav-empty" class="fav-empty">No favorites yet.</p>
+      <ul id="fav-list"></ul>
+    </aside>
+  </div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <script>
+(function () {
+  var PAGE = 1000;
+  var WHERE = "assessment_class='RE' AND land_size_sf >= 10000 AND address like '% SW' AND sub_property_use in('R110','R111','R010','A006')";
+  var SELECT = "address,land_size_sf,assessed_value,year_of_construction,comm_name,roll_number,sub_property_use,multipolygon";
+  var BASE = "https://data.calgary.ca/resource/4bsw-nn7w.json";
+  var USE_LABELS = { R110: 'Detached', R111: 'Detached + suite', R010: 'Residential acreage', A006: 'Vacant land' };
+  var TOTAL_ESTIMATE = 4300;
+  var map = L.map('map', { preferCanvas: true }).setView([50.98, -114.12], 11);
+  map.createPane('lotLines');
+  map.getPane('lotLines').style.zIndex = 350;
+  map.createPane('favorites');
+  map.getPane('favorites').style.zIndex = 650;
+  var lotRenderer = L.canvas({ pane: 'lotLines' });
+  var IMAGERY = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+  var ROADS = 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}';
+  var PLACES = 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}';
+  var IMAGERY_ATTR = 'Tiles &copy; <a href="https://www.esri.com/">Esri</a> &mdash; Source: Esri, Vantor, Earthstar Geographics, and the GIS User Community';
+  var HYBRID_ATTR = IMAGERY_ATTR +
+    '; labels &copy; Esri, HERE, Garmin, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+  function imageryLayer(attribution) {
+    return L.tileLayer(IMAGERY, { maxZoom: 19, attribution: attribution });
+  }
+  var streets = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+  var satellite = imageryLayer(IMAGERY_ATTR);
+  var hybrid = L.layerGroup([
+    imageryLayer(HYBRID_ATTR),
+    L.tileLayer(ROADS, { maxZoom: 19 }),
+    L.tileLayer(PLACES, { maxZoom: 19 })
+  ]);
+  var baseLayers = { Streets: streets, Satellite: satellite, Hybrid: hybrid };
+  var lotLines = L.layerGroup();
+  var NARROW_QUERY = '(max-width: 767px), (max-height: 500px) and (orientation: landscape) and (max-width: 1024px)';
+  var narrowMap = window.matchMedia(NARROW_QUERY);
+  var layersControl = L.control.layers(baseLayers, { 'Lot lines': lotLines }, {
+    position: 'topright',
+    collapsed: narrowMap.matches
+  }).addTo(map);
+  var layersRoot = layersControl.getContainer();
+  var layersToggle = layersRoot.querySelector('a');
+  var ignoreLayersClick = false;
+  if (layersToggle) {
+    layersToggle.title = 'Basemap and lot lines';
+    layersToggle.setAttribute('aria-label', 'Basemap and lot lines');
+    layersToggle.addEventListener('pointerdown', function () {
+      if (!narrowMap.matches) return;
+      ignoreLayersClick = true;
+      layersControl.expand();
+      setTimeout(function () { ignoreLayersClick = false; }, 700);
+    });
+  }
+  layersRoot.addEventListener('click', function (e) {
+    if (!ignoreLayersClick) return;
+    ignoreLayersClick = false;
+    e.preventDefault();
+    e.stopPropagation();
+  }, true);
+  var layersSection = layersRoot.querySelector('section');
+  if (layersSection) {
+    var layersClose = document.createElement('button');
+    layersClose.type = 'button';
+    layersClose.className = 'layers-dismiss';
+    layersClose.textContent = 'Close';
+    layersClose.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      layersControl.collapse();
+    });
+    layersSection.appendChild(layersClose);
+  }
+  map.on('click', function () {
+    if (narrowMap.matches && !ignoreLayersClick) layersControl.collapse();
+  });
+  map.on('overlayadd', function (e) {
+    if (e.layer !== lotLines) return;
+    lotLinesOn = true;
+    syncLotLines();
+  });
+  map.on('overlayremove', function (e) {
+    if (e.layer !== lotLines) return;
+    lotLinesOn = false;
+    lotSyncGen++;
+    lotLines.clearLayers();
+  });
+  map.on('baselayerchange', function (e) {
+    imageryBase = e.name !== 'Streets';
+    document.body.classList.toggle('imagery-base', imageryBase);
+    for (var i = 0; i < markers.length; i++) {
+      styleParcelLines(markers[i]);
+      styleMarker(markers[i]);
+    }
+  });
+  var cluster = L.markerClusterGroup({
+    chunkedLoading: false,
+    maxClusterRadius: 60,
+    spiderfyOnMaxZoom: true,
+    showCoverageOnHover: false,
+    iconCreateFunction: clusterIcon
+  }).addTo(map);
+  var favoriteStars = L.layerGroup().addTo(map);
+  var warnEl = document.getElementById('warn');
+  var loadErrorEl = document.getElementById('load-error');
+  var barEl = document.getElementById('bar');
+  var minEl = document.getElementById('min-value');
+  var maxEl = document.getElementById('max-value');
+  var clearBtn = document.getElementById('clear-filter');
+  var formEl = document.getElementById('value-filter');
+  var minLotEl = document.getElementById('min-lot');
+  var maxLotEl = document.getElementById('max-lot');
+  var clearLotBtn = document.getElementById('clear-lot');
+  var lotFormEl = document.getElementById('lot-filter');
+  var markers = [];
+  var bounds = [];
+  var loadComplete = false;
+  var filterTimer = null;
+  var syncedCount = 0;
+  var lastFilterKey = null;
+  var lotLinesOn = false;
+  var lotSyncGen = 0;
+  var imageryBase = false;
+  var FAVORITES_STORAGE_KEY = 'calgary-sw-map.favorites';
+  var STREET_MARKER = { radius: 5, color: '#1a365d', weight: 1, fillColor: '#3182ce', fillOpacity: 0.75 };
+  var IMAGERY_MARKER = { radius: 5, color: '#0f172a', weight: 1.5, fillColor: '#ffffff', fillOpacity: 0.95 };
+  var FAV_STYLE = { radius: 8, color: '#744210', weight: 2, fillColor: '#d69e2e', fillOpacity: 0.95 };
+  var favoriteIds = [];
+  var favoriteSet = {};
+  var markersByRoll = {};
+  var activePopup = null;
+  var keepView = false;
+  var headerEl = document.getElementById('app-header');
+  var filtersToggle = document.getElementById('filters-toggle');
+  var filtersBadge = document.getElementById('filters-badge');
+  var filtersBackdrop = document.getElementById('filters-backdrop');
+  var favOpenBtn = document.getElementById('fav-open');
+  var favPanel = document.getElementById('fav-panel');
+  var favList = document.getElementById('fav-list');
+  var favEmpty = document.getElementById('fav-empty');
+  var favCountEl = document.getElementById('fav-count');
+  var STREET_HALO = { color: '#ffffff', weight: 2.5, opacity: 0.75 };
+  var STREET_LINE = { color: '#1a365d', weight: 1.15, opacity: 0.95 };
+  var IMAGERY_HALO = { color: '#0f172a', weight: 2.75, opacity: 0.85 };
+  var IMAGERY_LINE = { color: '#ffffff', weight: 1.35, opacity: 0.95 };
+  function fmtNum(n) {
+    var x = Number(n);
+    return isFinite(x) ? x.toLocaleString('en-CA') : String(n || '');
+  }
+  function fmtCAD(n) {
+    if (n == null || n === '') return '\u2014';
+    var x = Number(n);
+    return isFinite(x) ? x.toLocaleString('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 }) : '\u2014';
+  }
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function parseMoney(v) {
+    if (v == null || v === '') return null;
+    var x = Number(String(v).replace(/[$,\s]/g, ''));
+    return isFinite(x) ? x : null;
+  }
+  function parseSize(v) {
+    if (v == null || v === '') return null;
+    var x = Number(String(v).replace(/[,\s]/g, ''));
+    return isFinite(x) ? x : null;
+  }
+  function parseYear(v) {
+    if (v == null || v === '') return null;
+    var x = Number(v);
+    if (!isFinite(x) || x <= 0) return null;
+    return Math.round(x);
+  }
+  function fmtYear(year) {
+    return year == null ? '\u2014' : String(year);
+  }
+  function readBound(raw) {
+    var s = String(raw == null ? '' : raw).replace(/[$,\s]/g, '');
+    if (!s) return null;
+    var x = Number(s);
+    return isFinite(x) ? x : null;
+  }
+  function currentFilter() {
+    return { min: readBound(minEl.value), max: readBound(maxEl.value) };
+  }
+  function currentLotFilter() {
+    return { min: readBound(minLotEl.value), max: readBound(maxLotEl.value) };
+  }
+  function inRange(value, filter) {
+    if (filter.min == null && filter.max == null) return true;
+    if (value == null || !isFinite(value)) return false;
+    if (filter.min != null && value < filter.min) return false;
+    if (filter.max != null && value > filter.max) return false;
+    return true;
+  }
+  function boundsInverted(filter) {
+    return filter.min != null && filter.max != null && filter.min > filter.max;
+  }
+  function passesFilters(marker, valueFilter, lotFilter) {
+    return inRange(marker.assessedValue, valueFilter) && inRange(marker.landSize, lotFilter);
+  }
+  function filterKey(filter) {
+    return (filter.min == null ? '' : String(filter.min)) + '|' + (filter.max == null ? '' : String(filter.max));
+  }
+  function setProgress(loaded) {
+    if (loadComplete) {
+      barEl.hidden = true;
+      barEl.style.width = '0';
+      return;
+    }
+    barEl.hidden = false;
+    barEl.style.width = Math.min(99, (loaded / TOTAL_ESTIMATE) * 100) + '%';
+  }
+  function centroid(mp) {
+    try {
+      var ring = mp.coordinates[0][0];
+      var sx = 0, sy = 0, n = ring.length;
+      for (var i = 0; i < n; i++) { sx += ring[i][0]; sy += ring[i][1]; }
+      return [sy / n, sx / n];
+    } catch (e) { return null; }
+  }
+  function isFavorite(roll) { return !!favoriteSet[roll]; }
+  function rebuildFavoriteSet() {
+    favoriteSet = {};
+    for (var i = 0; i < favoriteIds.length; i++) favoriteSet[favoriteIds[i]] = true;
+  }
+  function loadFavorites() {
+    try {
+      var raw = localStorage.getItem(FAVORITES_STORAGE_KEY);
+      if (!raw) return;
+      var parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return;
+      var seen = {};
+      for (var i = 0; i < parsed.length; i++) {
+        var id = String(parsed[i] == null ? '' : parsed[i]);
+        if (!id || seen[id]) continue;
+        seen[id] = true;
+        favoriteIds.push(id);
+      }
+    } catch (e) {}
+    rebuildFavoriteSet();
+  }
+  function saveFavorites() {
+    try { localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(favoriteIds)); } catch (e) {}
+  }
+  function markerStyle(roll) {
+    if (isFavorite(roll)) return FAV_STYLE;
+    return imageryBase ? IMAGERY_MARKER : STREET_MARKER;
+  }
+  function styleMarker(marker) {
+    marker.setStyle(markerStyle(marker.rollNumber));
+    if (isFavorite(marker.rollNumber) && marker._map) marker.bringToFront();
+  }
+  function clusterIcon(clusterGroup) {
+    var children = clusterGroup.getAllChildMarkers();
+    var favCount = 0;
+    for (var i = 0; i < children.length; i++) {
+      if (isFavorite(children[i].rollNumber)) favCount++;
+    }
+    var count = clusterGroup.getChildCount();
+    var size = count < 10 ? 'small' : (count < 100 ? 'medium' : 'large');
+    var inner = '<div><span>' + count + '</span></div>';
+    var className = 'marker-cluster marker-cluster-' + size;
+    if (favCount) {
+      className += ' fav-cluster';
+      inner = '<span class="fav-cluster-wrap">' + inner +
+        '<span class="fav-cluster-star" title="Contains favorited parcels">\u2605</span></span>';
+    }
+    return L.divIcon({ html: inner, className: className, iconSize: L.point(40, 40) });
+  }
+  function favoriteButtonHtml(marker) {
+    if (!marker.rollNumber) return '';
+    var on = isFavorite(marker.rollNumber);
+    return '<button type="button" class="fav-toggle" data-roll="' + escapeHtml(marker.rollNumber) +
+      '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
+      '<span class="fav-star" aria-hidden="true">' + (on ? '\u2605' : '\u2606') + '</span>' +
+      (on ? 'Favorited' : 'Favorite') + '</button>';
+  }
+  function popupHtml(marker) {
+    var hidden = !passesFilters(marker, currentFilter(), currentLotFilter());
+    return '<div class="popup"><strong>' + escapeHtml(marker.address) + '</strong>' +
+      favoriteButtonHtml(marker) +
+      '<div class="row"><span class="label">Type</span><span>' + escapeHtml(marker.useLabel) + '</span></div>' +
+      '<div class="row"><span class="label">Year built</span><span>' + fmtYear(marker.yearBuilt) + '</span></div>' +
+      '<div class="row"><span class="label">Land size</span><span>' + fmtNum(marker.landSize) + ' sq ft</span></div>' +
+      '<div class="row"><span class="label">Assessed</span><span>' + fmtCAD(marker.assessedValue) + '</span></div>' +
+      '<div class="row"><span class="label">Community</span><span>' + escapeHtml(marker.community) + '</span></div>' +
+      '<div class="row"><span class="label">Roll #</span><span>' + escapeHtml(marker.rollNumber) + '</span></div>' +
+      (hidden ? '<p class="popup-hidden">Hidden by the current value or lot-size filter.</p>' : '') +
+      '</div>';
+  }
+  function renderFavorites() {
+    var n = favoriteIds.length;
+    favCountEl.textContent = String(n);
+    favOpenBtn.classList.toggle('has-favorites', n > 0);
+    if (!n) {
+      favList.innerHTML = '';
+      favEmpty.hidden = false;
+      syncFavoriteStars();
+      return;
+    }
+    favEmpty.hidden = true;
+    var filter = currentFilter();
+    var lotFilter = currentLotFilter();
+    var html = '';
+    for (var i = 0; i < n; i++) {
+      var roll = favoriteIds[i];
+      var marker = markersByRoll[roll];
+      html += '<li class="fav-item">';
+      if (!marker) {
+        html += '<div class="fav-item-title">Roll ' + escapeHtml(roll) + '</div>';
+        html += '<div class="fav-meta">' + (loadComplete ? 'Not in the current parcel set' : 'Loading parcel\u2026') + '</div>';
+        html += '<div class="fav-actions"><button type="button" class="fav-remove" data-roll="' + escapeHtml(roll) +
+          '" aria-label="Remove roll ' + escapeHtml(roll) + ' from favorites">Remove</button></div>';
+      } else {
+        var shown = passesFilters(marker, filter, lotFilter);
+        html += '<div class="fav-item-title">' + escapeHtml(marker.address) + '</div>';
+        html += '<div class="fav-meta">' + escapeHtml(marker.community || '\u2014') +
+          ' \u00b7 ' + fmtYear(marker.yearBuilt) +
+          ' \u00b7 ' + fmtNum(marker.landSize) + ' sq ft' +
+          ' \u00b7 ' + fmtCAD(marker.assessedValue) + '</div>';
+        if (!shown) html += '<div class="fav-hidden-note">Hidden on the map by the current filters</div>';
+        html += '<div class="fav-actions">';
+        html += '<button type="button" class="fav-jump" data-roll="' + escapeHtml(roll) +
+          '" aria-label="Show ' + escapeHtml(marker.address) + ' on the map">Show on map</button>';
+        html += '<button type="button" class="fav-remove" data-roll="' + escapeHtml(roll) +
+          '" aria-label="Remove ' + escapeHtml(marker.address) + ' from favorites">Remove</button>';
+        html += '</div>';
+      }
+      html += '</li>';
+    }
+    var scroll = favList.scrollTop;
+    favList.innerHTML = html;
+    favList.scrollTop = scroll;
+    syncFavoriteStars();
+  }
+  function starIcon() {
+    return L.divIcon({
+      className: 'fav-pin',
+      html: '<span aria-hidden="true">\u2605</span>',
+      iconSize: [26, 26],
+      iconAnchor: [13, 13],
+      popupAnchor: [0, -14]
+    });
+  }
+  function syncFavoriteStars() {
+    favoriteStars.clearLayers();
+    var filter = currentFilter();
+    var lotFilter = currentLotFilter();
+    for (var i = 0; i < favoriteIds.length; i++) {
+      var marker = markersByRoll[favoriteIds[i]];
+      if (!marker || !passesFilters(marker, filter, lotFilter)) continue;
+      var pin = L.marker(marker.getLatLng(), {
+        pane: 'favorites',
+        icon: starIcon(),
+        keyboard: false,
+        bubblingMouseEvents: false,
+        title: marker.address || 'Favorited parcel'
+      });
+      pin.rollNumber = marker.rollNumber;
+      pin.on('click', function (ev) {
+        if (ev.originalEvent) L.DomEvent.stopPropagation(ev.originalEvent);
+        focusFavorite(ev.target.rollNumber);
+      });
+      favoriteStars.addLayer(pin);
+    }
+  }
+  function refreshActivePopup(roll) {
+    if (!activePopup || !activePopup.getElement) return;
+    var el = activePopup.getElement();
+    if (!el) return;
+    var btn = el.querySelector('.fav-toggle');
+    if (!btn || btn.getAttribute('data-roll') !== roll) return;
+    var marker = markersByRoll[roll];
+    if (!marker) return;
+    if (typeof activePopup.getContent() === 'function') activePopup.update();
+    else activePopup.setContent(popupHtml(marker));
+  }
+  function refreshFavoriteMarkers(roll) {
+    for (var i = 0; i < markers.length; i++) {
+      if (markers[i].rollNumber === roll) styleMarker(markers[i]);
+    }
+    cluster.refreshClusters();
+  }
+  function toggleFavorite(roll) {
+    roll = String(roll == null ? '' : roll);
+    if (!roll) return;
+    var idx = favoriteIds.indexOf(roll);
+    if (idx >= 0) favoriteIds.splice(idx, 1);
+    else favoriteIds.unshift(roll);
+    rebuildFavoriteSet();
+    saveFavorites();
+    refreshFavoriteMarkers(roll);
+    renderFavorites();
+    refreshActivePopup(roll);
+  }
+  function setFavPanel(open) {
+    favPanel.hidden = !open;
+    favOpenBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  function focusFavorite(roll) {
+    var marker = markersByRoll[String(roll == null ? '' : roll)];
+    if (!marker) return;
+    keepView = true;
+    if (narrowMap.matches) setFavPanel(false);
+    if (passesFilters(marker, currentFilter(), currentLotFilter())) {
+      cluster.zoomToShowLayer(marker, function () { marker.openPopup(); });
+      return;
+    }
+    var ll = marker.getLatLng();
+    map.setView(ll, Math.max(map.getZoom(), 17));
+    L.popup({ maxWidth: 320, autoPan: true }).setLatLng(ll).setContent(popupHtml(marker)).openOn(map);
+  }
+  function lotStyles() {
+    return imageryBase
+      ? { halo: IMAGERY_HALO, line: IMAGERY_LINE }
+      : { halo: STREET_HALO, line: STREET_LINE };
+  }
+  function multipolygonLatLngs(mp) {
+    if (!mp || !mp.coordinates) return null;
+    var polys = mp.type === 'Polygon' ? [mp.coordinates] : mp.coordinates;
+    if (!polys || !polys.length) return null;
+    var latlngs = [];
+    for (var p = 0; p < polys.length; p++) {
+      var ringsIn = polys[p];
+      if (!ringsIn || !ringsIn.length) continue;
+      var rings = [];
+      for (var r = 0; r < ringsIn.length; r++) {
+        var src = ringsIn[r];
+        if (!src || src.length < 3) continue;
+        var ring = new Array(src.length);
+        for (var i = 0; i < src.length; i++) ring[i] = [src[i][1], src[i][0]];
+        rings.push(ring);
+      }
+      if (rings.length) latlngs.push(rings);
+    }
+    return latlngs.length ? latlngs : null;
+  }
+  function partOptions(style) {
+    return {
+      renderer: lotRenderer,
+      pane: 'lotLines',
+      interactive: false,
+      fill: false,
+      color: style.color,
+      weight: style.weight,
+      opacity: style.opacity
+    };
+  }
+  function applyPartStyle(part, style) {
+    if (part._map) part.setStyle(style);
+    else L.setOptions(part, style);
+  }
+  function ensureLotLine(marker) {
+    if (marker.lotLine !== undefined) return marker.lotLine;
+    var latlngs = multipolygonLatLngs(marker.multipolygon);
+    marker.multipolygon = undefined;
+    if (!latlngs) {
+      marker.lotLine = null;
+      marker.lotHalo = null;
+      return null;
+    }
+    var styles = lotStyles();
+    marker.lotHalo = L.polygon(latlngs, partOptions(styles.halo));
+    marker.lotLine = L.polygon(latlngs, partOptions(styles.line));
+    return marker.lotLine;
+  }
+  function styleParcelLines(marker) {
+    if (!marker.lotLine) return;
+    var styles = lotStyles();
+    applyPartStyle(marker.lotHalo, styles.halo);
+    applyPartStyle(marker.lotLine, styles.line);
+  }
+  function showParcelLines(marker) {
+    var line = ensureLotLine(marker);
+    if (!line) return;
+    if (!lotLines.hasLayer(marker.lotHalo)) lotLines.addLayer(marker.lotHalo);
+    if (!lotLines.hasLayer(line)) lotLines.addLayer(line);
+  }
+  function hideParcelLines(marker) {
+    if (marker.lotHalo && lotLines.hasLayer(marker.lotHalo)) lotLines.removeLayer(marker.lotHalo);
+    if (marker.lotLine && lotLines.hasLayer(marker.lotLine)) lotLines.removeLayer(marker.lotLine);
+  }
+  function syncLotLines() {
+    if (!lotLinesOn) return;
+    var gen = ++lotSyncGen;
+    var filter = currentFilter();
+    var lotFilter = currentLotFilter();
+    var index = 0;
+    function step() {
+      if (gen !== lotSyncGen || !lotLinesOn) return;
+      var end = Math.min(index + 400, markers.length);
+      for (; index < end; index++) {
+        var marker = markers[index];
+        if (passesFilters(marker, filter, lotFilter)) showParcelLines(marker);
+        else hideParcelLines(marker);
+      }
+      if (index < markers.length) setTimeout(step, 0);
+    }
+    step();
+  }
+  function applyFilter(rebuild) {
+    var filter = currentFilter();
+    var lotFilter = currentLotFilter();
+    var key = filterKey(filter) + '||' + filterKey(lotFilter);
+    if (rebuild || key !== lastFilterKey) {
+      var visible = [];
+      for (var i = 0; i < markers.length; i++) {
+        if (passesFilters(markers[i], filter, lotFilter)) visible.push(markers[i]);
+      }
+      cluster.clearLayers();
+      if (visible.length) cluster.addLayers(visible);
+      syncedCount = markers.length;
+      lastFilterKey = key;
+    } else if (syncedCount < markers.length) {
+      var fresh = [];
+      for (var j = syncedCount; j < markers.length; j++) {
+        if (passesFilters(markers[j], filter, lotFilter)) fresh.push(markers[j]);
+      }
+      if (fresh.length) cluster.addLayers(fresh);
+      syncedCount = markers.length;
+    }
+    var valueInverted = boundsInverted(filter);
+    var lotInverted = boundsInverted(lotFilter);
+    if (valueInverted && lotInverted) {
+      warnEl.textContent = 'Minimum is above maximum for assessed value and lot size.';
+    } else if (lotInverted) {
+      warnEl.textContent = 'Minimum lot size is above maximum.';
+    } else {
+      warnEl.textContent = 'Minimum is above maximum.';
+    }
+    warnEl.hidden = !(valueInverted || lotInverted);
+    clearBtn.disabled = filter.min == null && filter.max == null;
+    clearLotBtn.disabled = lotFilter.min == null && lotFilter.max == null;
+    syncFiltersToggle(filter, lotFilter);
+    if (lotLinesOn) syncLotLines();
+    renderFavorites();
+  }
+  function activeFilterGroups(filter, lotFilter) {
+    var valueOn = filter.min != null || filter.max != null;
+    var lotOn = lotFilter.min != null || lotFilter.max != null;
+    return (valueOn ? 1 : 0) + (lotOn ? 1 : 0);
+  }
+  function syncFiltersToggle(filter, lotFilter) {
+    var n = activeFilterGroups(filter, lotFilter);
+    filtersBadge.hidden = n === 0;
+    filtersBadge.textContent = String(n);
+    filtersToggle.classList.toggle('is-active', n > 0);
+    filtersToggle.setAttribute('aria-label', n ? ('Filters, ' + n + ' active') : 'Filters');
+  }
+  function setFiltersOpen(open) {
+    if (!narrowMap.matches) {
+      headerEl.classList.remove('filters-collapsed');
+      document.body.classList.remove('filters-open');
+      filtersToggle.setAttribute('aria-expanded', 'true');
+      return;
+    }
+    headerEl.classList.toggle('filters-collapsed', !open);
+    document.body.classList.toggle('filters-open', !!open);
+    filtersToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) {
+      setFavPanel(false);
+      layersControl.collapse();
+    }
+    map.invalidateSize();
+  }
+  function syncNarrowLayout() {
+    if (narrowMap.matches) {
+      headerEl.classList.add('filters-collapsed');
+      document.body.classList.remove('filters-open');
+      filtersToggle.setAttribute('aria-expanded', 'false');
+      layersControl.collapse();
+    } else {
+      headerEl.classList.remove('filters-collapsed');
+      document.body.classList.remove('filters-open');
+      filtersToggle.setAttribute('aria-expanded', 'true');
+      layersControl.expand();
+    }
+    map.invalidateSize();
+  }
+  function formatBoundInput(el) {
+    var v = readBound(el.value);
+    el.value = v == null ? '' : Math.round(v).toLocaleString('en-CA');
+  }
+  function scheduleFilter() {
+    if (filterTimer) clearTimeout(filterTimer);
+    filterTimer = setTimeout(function () {
+      filterTimer = null;
+      applyFilter(true);
+    }, 120);
+  }
+  minEl.addEventListener('input', scheduleFilter);
+  maxEl.addEventListener('input', scheduleFilter);
+  minEl.addEventListener('change', function () {
+    if (filterTimer) clearTimeout(filterTimer);
+    formatBoundInput(minEl);
+    applyFilter(true);
+  });
+  maxEl.addEventListener('change', function () {
+    if (filterTimer) clearTimeout(filterTimer);
+    formatBoundInput(maxEl);
+    applyFilter(true);
+  });
+  clearBtn.addEventListener('click', function () {
+    if (filterTimer) clearTimeout(filterTimer);
+    minEl.value = '';
+    maxEl.value = '';
+    applyFilter(true);
+  });
+  formEl.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (filterTimer) clearTimeout(filterTimer);
+    formatBoundInput(minEl);
+    formatBoundInput(maxEl);
+    applyFilter(true);
+    if (narrowMap.matches) setFiltersOpen(false);
+  });
+  minLotEl.addEventListener('input', scheduleFilter);
+  maxLotEl.addEventListener('input', scheduleFilter);
+  minLotEl.addEventListener('change', function () {
+    if (filterTimer) clearTimeout(filterTimer);
+    formatBoundInput(minLotEl);
+    applyFilter(true);
+  });
+  maxLotEl.addEventListener('change', function () {
+    if (filterTimer) clearTimeout(filterTimer);
+    formatBoundInput(maxLotEl);
+    applyFilter(true);
+  });
+  clearLotBtn.addEventListener('click', function () {
+    if (filterTimer) clearTimeout(filterTimer);
+    minLotEl.value = '';
+    maxLotEl.value = '';
+    applyFilter(true);
+  });
+  lotFormEl.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (filterTimer) clearTimeout(filterTimer);
+    formatBoundInput(minLotEl);
+    formatBoundInput(maxLotEl);
+    applyFilter(true);
+    if (narrowMap.matches) setFiltersOpen(false);
+  });
+  window.addEventListener('resize', function () { map.invalidateSize(); });
+  requestAnimationFrame(function () { map.invalidateSize(); });
+  map.on('dragstart', function () { keepView = true; });
+  map.on('zoomstart', function (e) {
+    if (e.originalEvent) keepView = true;
+  });
+  map.on('popupopen', function (e) {
+    activePopup = e.popup;
+    var el = e.popup.getElement();
+    if (!el || el._favBound) return;
+    el._favBound = true;
+    el.addEventListener('click', function (ev) {
+      var toggle = ev.target.closest && ev.target.closest('.fav-toggle');
+      if (!toggle) return;
+      ev.preventDefault();
+      toggleFavorite(toggle.getAttribute('data-roll'));
+    });
+  });
+  map.on('popupclose', function (e) {
+    if (activePopup === e.popup) activePopup = null;
+  });
+  filtersToggle.addEventListener('click', function () {
+    setFiltersOpen(headerEl.classList.contains('filters-collapsed'));
+  });
+  document.getElementById('filters-done').addEventListener('click', function () {
+    setFiltersOpen(false);
+    filtersToggle.focus();
+  });
+  filtersBackdrop.addEventListener('click', function () {
+    setFiltersOpen(false);
+    filtersToggle.focus();
+  });
+  favOpenBtn.addEventListener('click', function () {
+    var open = favPanel.hidden;
+    if (open) {
+      setFiltersOpen(false);
+      if (narrowMap.matches) layersControl.collapse();
+    }
+    setFavPanel(open);
+  });
+  document.getElementById('fav-close').addEventListener('click', function () {
+    setFavPanel(false);
+    favOpenBtn.focus();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (!favPanel.hidden) {
+      setFavPanel(false);
+      favOpenBtn.focus();
+      return;
+    }
+    if (narrowMap.matches && !headerEl.classList.contains('filters-collapsed')) {
+      setFiltersOpen(false);
+      filtersToggle.focus();
+      return;
+    }
+    if (narrowMap.matches) layersControl.collapse();
+  });
+  if (narrowMap.addEventListener) narrowMap.addEventListener('change', syncNarrowLayout);
+  else if (narrowMap.addListener) narrowMap.addListener(syncNarrowLayout);
+  syncNarrowLayout();
+  syncFiltersToggle(currentFilter(), currentLotFilter());
+  document.addEventListener('click', function (e) {
+    var target = e.target;
+    if (!target || !target.closest) return;
+    var jump = target.closest('.fav-jump');
+    if (jump) {
+      e.preventDefault();
+      focusFavorite(jump.getAttribute('data-roll'));
+      return;
+    }
+    var remove = target.closest('.fav-remove');
+    if (remove) {
+      e.preventDefault();
+      toggleFavorite(remove.getAttribute('data-roll'));
+    }
+  });
+  loadFavorites();
+  renderFavorites();
+  async function run() {
+    var offset = 0;
+    setProgress(0);
+    try {
+      while (true) {
+        var url = BASE + '?$select=' + encodeURIComponent(SELECT) +
+          '&$where=' + encodeURIComponent(WHERE) +
+          '&$order=' + encodeURIComponent('land_size_sf DESC') +
+          '&$limit=' + PAGE + '&$offset=' + offset;
+        var res = await fetch(url);
+        if (!res.ok) throw new Error('API ' + res.status);
+        var rows = await res.json();
+        if (!rows.length) break;
+        for (var i = 0; i < rows.length; i++) {
+          var r = rows[i];
+          var c = centroid(r.multipolygon);
+          if (!c) continue;
+          bounds.push(c);
+          var roll = r.roll_number == null ? '' : String(r.roll_number);
+          var marker = L.circleMarker(c, markerStyle(roll));
+          marker.address = r.address;
+          marker.useLabel = USE_LABELS[r.sub_property_use] || r.sub_property_use;
+          marker.landSize = parseSize(r.land_size_sf);
+          marker.community = r.comm_name;
+          marker.rollNumber = roll;
+          marker.assessedValue = parseMoney(r.assessed_value);
+          marker.yearBuilt = parseYear(r.year_of_construction);
+          marker.multipolygon = r.multipolygon;
+          marker.bindPopup(function (layer) { return popupHtml(layer); }, { maxWidth: 320 });
+          if (roll && !markersByRoll[roll]) markersByRoll[roll] = marker;
+          markers.push(marker);
+        }
+        offset += rows.length;
+        setProgress(markers.length);
+        applyFilter(false);
+        if (rows.length < PAGE) break;
+        await new Promise(function (resolve) { setTimeout(resolve, 0); });
+      }
+      loadComplete = true;
+      setProgress(markers.length);
+      applyFilter(false);
+      if (bounds.length && !keepView) map.fitBounds(bounds, { padding: [24, 24] });
+    } catch (e) {
+      loadComplete = true;
+      barEl.hidden = true;
+      loadErrorEl.hidden = false;
+      loadErrorEl.textContent = 'Load failed: ' + e.message + ' (try refreshing)';
+      renderFavorites();
+      console.error(e);
+    }
+  }
+  run();
+})();
+  </script>
+</body>
 </html>
