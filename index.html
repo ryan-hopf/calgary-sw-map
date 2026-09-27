@@ -83,7 +83,8 @@
       display: inline-block; min-width: 1.25em; padding: 0 6px; border-radius: 999px;
       background: rgba(0,0,0,.18); font-variant-numeric: tabular-nums; text-align: center;
     }
-    .stage { position: relative; flex: 1 1 auto; min-height: 0; }
+    /* Stacking context so map overlays stay under the header's filter sheet. */
+    .stage { position: relative; z-index: 1; flex: 1 1 auto; min-height: 0; }
     #map { height: 100%; width: 100%; }
     .legend {
       position: absolute; bottom: 24px; left: 12px; z-index: 1000;
@@ -241,7 +242,7 @@
       .leaflet-control-layers-selector { width: 20px; height: 20px; margin: 0; }
       .layers-dismiss {
         display: flex; align-items: center; justify-content: center; width: 100%;
-        box-sizing: border-box; margin: 0 0 8px; min-height: 40px; border: 0; border-radius: 4px;
+        box-sizing: border-box; margin: 8px 0 0; min-height: 40px; border: 0; border-radius: 4px;
         background: #1a365d; color: #fff; font: inherit; font-size: 14px; font-weight: 600;
         cursor: pointer;
       }
@@ -374,12 +375,28 @@
     position: 'topright',
     collapsed: narrowMap.matches
   }).addTo(map);
-  var layersToggle = layersControl.getContainer().querySelector('a');
+  var layersRoot = layersControl.getContainer();
+  var layersToggle = layersRoot.querySelector('a');
+  // Expanding hides the icon, so the same tap's click lands on whatever opened
+  // underneath (often Close). Ignore that one click, then let later taps through.
+  var ignoreLayersClick = false;
   if (layersToggle) {
     layersToggle.title = 'Basemap and lot lines';
     layersToggle.setAttribute('aria-label', 'Basemap and lot lines');
+    layersToggle.addEventListener('pointerdown', function () {
+      if (!narrowMap.matches) return;
+      ignoreLayersClick = true;
+      layersControl.expand();
+      setTimeout(function () { ignoreLayersClick = false; }, 700);
+    });
   }
-  var layersSection = layersControl.getContainer().querySelector('section');
+  layersRoot.addEventListener('click', function (e) {
+    if (!ignoreLayersClick) return;
+    ignoreLayersClick = false;
+    e.preventDefault();
+    e.stopPropagation();
+  }, true);
+  var layersSection = layersRoot.querySelector('section');
   if (layersSection) {
     var layersClose = document.createElement('button');
     layersClose.type = 'button';
@@ -390,10 +407,10 @@
       e.stopPropagation();
       layersControl.collapse();
     });
-    layersSection.insertBefore(layersClose, layersSection.firstChild);
+    layersSection.appendChild(layersClose);
   }
   map.on('click', function () {
-    if (narrowMap.matches) layersControl.collapse();
+    if (narrowMap.matches && !ignoreLayersClick) layersControl.collapse();
   });
   map.on('overlayadd', function (e) {
     if (e.layer !== lotLines) return;
