@@ -460,11 +460,12 @@
   var favList = document.getElementById('fav-list');
   var favEmpty = document.getElementById('fav-empty');
   var favCountEl = document.getElementById('fav-count');
-  // Halo under a thinner stroke so shared lot edges stay readable on streets and imagery.
-  var STREET_HALO = { color: '#ffffff', weight: 2.5, opacity: 0.75 };
-  var STREET_LINE = { color: '#1a365d', weight: 1.15, opacity: 0.95 };
-  var IMAGERY_HALO = { color: '#0f172a', weight: 2.75, opacity: 0.85 };
-  var IMAGERY_LINE = { color: '#ffffff', weight: 1.35, opacity: 0.95 };
+  // Bright cyan edge, contrasting halo, and a light fill on the halo only.
+  // The fill paints under both strokes so roofs stay visible through the tint.
+  var STREET_HALO = { color: '#ffffff', weight: 3.6, opacity: 0.95, fillColor: '#7dd3fc', fillOpacity: 0.16 };
+  var STREET_LINE = { color: '#0284c7', weight: 2.15, opacity: 1 };
+  var IMAGERY_HALO = { color: '#082f49', weight: 4, opacity: 0.92, fillColor: '#f0f9ff', fillOpacity: 0.12 };
+  var IMAGERY_LINE = { color: '#67e8f9', weight: 2.25, opacity: 1 };
 
   function fmtNum(n) {
     var x = Number(n);
@@ -764,20 +765,31 @@
     }
     return latlngs.length ? latlngs : null;
   }
-  function partOptions(style) {
+  function pathPaint(style) {
+    var filled = style.fillOpacity > 0 && !!style.fillColor;
     return {
-      renderer: lotRenderer,
-      pane: 'lotLines',
       interactive: false,
-      fill: false,
+      stroke: true,
       color: style.color,
       weight: style.weight,
-      opacity: style.opacity
+      opacity: style.opacity,
+      lineJoin: 'round',
+      lineCap: 'round',
+      fill: filled,
+      fillColor: filled ? style.fillColor : '#000000',
+      fillOpacity: filled ? style.fillOpacity : 0
     };
   }
+  function partOptions(style) {
+    var opts = pathPaint(style);
+    opts.renderer = lotRenderer;
+    opts.pane = 'lotLines';
+    return opts;
+  }
   function applyPartStyle(part, style) {
-    if (part._map) part.setStyle(style);
-    else L.setOptions(part, style);
+    var paint = pathPaint(style);
+    if (part._map) part.setStyle(paint);
+    else L.setOptions(part, paint);
   }
   // Polygons are built on first use so the initial marker load stays unchanged.
   function ensureLotLine(marker) {
