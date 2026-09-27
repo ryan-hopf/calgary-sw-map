@@ -13,14 +13,14 @@
     header {
       position: relative; flex: 0 0 auto; z-index: 1000; background: #1a365d; color: #fff;
       display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-      gap: 10px 20px; padding: 8px 16px; box-sizing: border-box;
-      box-shadow: 0 2px 6px rgba(0,0,0,.25);
+      gap: 4px 12px; padding: 4px 12px; box-sizing: border-box;
+      box-shadow: 0 1px 4px rgba(0,0,0,.22);
     }
-    header h1 { font-size: 15px; font-weight: 600; margin: 0; line-height: 1.3; }
-    header p { font-size: 12px; margin: 2px 0 0; opacity: .85; }
-    .brand { flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; }
-    .titles { min-width: 0; }
-    .action-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; max-width: 100%; }
+    header h1 { font-size: 14px; font-weight: 600; margin: 0; line-height: 1.2; }
+    header p { font-size: 11px; margin: 1px 0 0; line-height: 1.25; opacity: .85; }
+    .brand { flex: 1 1 220px; min-width: 0; display: flex; flex-direction: row; align-items: center; gap: 8px; }
+    .titles { min-width: 0; flex: 1 1 auto; }
+    .action-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; max-width: 100%; flex: 0 0 auto; }
     .filters {
       display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end;
       gap: 8px 18px; flex: 3 1 680px; min-width: 0;
@@ -37,18 +37,18 @@
     .money {
       display: flex; align-items: center; gap: 2px; flex: 1 1 0; min-width: 0;
       background: #fff; color: #1a365d; border-radius: 4px; padding: 0 8px;
-      box-sizing: border-box; min-height: 40px;
+      box-sizing: border-box; min-height: 36px;
     }
     .money .prefix { font-size: 14px; font-weight: 600; }
     .money input {
       width: 100%; min-width: 0; border: 0; background: transparent; color: #1a365d;
-      font: inherit; font-size: 16px; padding: 8px 0; outline: none;
+      font: inherit; font-size: 15px; padding: 4px 0; outline: none;
     }
     .money input::placeholder { color: #718096; }
     .dash { opacity: .85; flex: 0 0 auto; }
     #clear-filter, #clear-lot {
       background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.55);
-      border-radius: 4px; padding: 8px 12px; min-height: 40px; font: inherit; font-size: 13px;
+      border-radius: 4px; padding: 4px 10px; min-height: 36px; font: inherit; font-size: 13px;
       cursor: pointer;
     }
     #clear-filter:disabled, #clear-lot:disabled { opacity: .4; cursor: default; }
@@ -56,7 +56,7 @@
     #fav-open, #filters-toggle {
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
       background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.55);
-      border-radius: 4px; padding: 8px 12px; min-height: 40px; font: inherit; font-size: 13px;
+      border-radius: 4px; padding: 4px 10px; min-height: 36px; font: inherit; font-size: 13px;
       font-weight: 600; cursor: pointer;
     }
     #filters-toggle { display: none; }
@@ -86,25 +86,21 @@
     /* Stacking context so map overlays stay under the header's filter sheet. */
     .stage { position: relative; z-index: 1; flex: 1 1 auto; min-height: 0; }
     #map { height: 100%; width: 100%; }
-    .legend {
-      position: absolute; bottom: 24px; left: 12px; z-index: 1000;
-      background: rgba(255,255,255,.96); padding: 10px 12px; border-radius: 6px;
-      box-shadow: 0 1px 4px rgba(0,0,0,.3); font-size: 12px; max-width: min(320px, calc(100% - 24px));
+    /* Load progress overlays the map edge so it does not add a chrome row. */
+    #bar {
+      position: absolute; top: 0; left: 0; z-index: 400; height: 3px; width: 0;
+      background: #2b6cb0; pointer-events: none; transition: width .2s;
     }
-    #range, #lot-range { color: #2d3748; }
-    #lot-range { margin-top: 4px; }
-    #warn { margin-top: 4px; color: #9b2c2c; }
+    #bar[hidden] { display: none; }
+    .filter-warn, .load-error {
+      flex: 1 1 100%; margin: 0; font-size: 12px; line-height: 1.3; font-weight: 600; color: #fed7d7;
+    }
+    .filter-warn[hidden], .load-error[hidden] { display: none; }
     .popup { font-size: 13px; line-height: 1.45; min-width: 200px; }
     .popup strong { display: block; font-size: 14px; margin-bottom: 6px; }
     .row { display: flex; justify-content: space-between; gap: 12px; }
     .label { color: #555; }
-    #bar { height: 3px; background: #2b6cb0; width: 0; transition: width .2s; margin-top: 6px; border-radius: 2px; }
-    .legend-key { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; margin-top: 6px; color: #2d3748; }
-    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; box-sizing: border-box; }
-    .dot-parcel { background: #3182ce; box-shadow: inset 0 0 0 1px #1a365d; }
-    .dot-fav { width: 12px; height: 12px; background: #d69e2e; box-shadow: inset 0 0 0 2px #744210; }
     /* Same imagery switch as lot lines: white markers read on aerial photos. Favorites stay gold. */
-    body.imagery-base .dot-parcel { background: #fff; box-shadow: inset 0 0 0 1px #0f172a; }
     body.imagery-base .marker-cluster:not(.fav-cluster) { background-color: rgba(15, 23, 42, 0.55); }
     body.imagery-base .marker-cluster:not(.fav-cluster) div {
       background-color: rgba(255, 255, 255, 0.95); color: #0f172a;
@@ -202,9 +198,12 @@
     }
     /* Phones, and short landscape phones that are still wider than 768px. */
     @media (max-width: 767px), (max-height: 500px) and (orientation: landscape) and (max-width: 1024px) {
-      header h1 { font-size: 14px; }
-      .brand { flex: 1 1 100%; }
+      header { padding: 4px 10px; gap: 4px 8px; }
+      header h1 { font-size: 13px; }
+      .brand { flex: 1 1 100%; flex-direction: column; align-items: stretch; gap: 4px; }
       .action-row { width: 100%; }
+      .money { min-height: 44px; }
+      .money input { font-size: 16px; padding: 8px 0; }
       #filters-toggle { display: inline-flex; flex: 1 1 0; min-height: 44px; }
       #fav-open { flex: 1 1 0; min-height: 44px; }
       #clear-filter, #clear-lot, #filters-done { min-height: 44px; }
@@ -227,7 +226,6 @@
         padding: 8px 12px; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
       }
       #filters-done:hover { background: #ebf8ff; }
-      .legend { max-width: min(210px, calc(58vw - 16px)); }
       #fav-panel {
         top: auto; bottom: 8px; left: 8px; right: 8px; width: auto;
         max-height: min(62vh, calc(100% - 16px));
@@ -247,6 +245,14 @@
         cursor: pointer;
       }
       .layers-dismiss:hover { background: #2a4365; }
+    }
+    /* Short landscape phones: one header row, subtitle yields to the map. */
+    @media (max-height: 500px) and (orientation: landscape) and (max-width: 1024px) {
+      header p { display: none; }
+      .brand { flex-direction: row; align-items: center; }
+      .action-row { width: auto; flex: 0 1 auto; }
+      header h1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      #fav-open, #filters-toggle { flex: 0 0 auto; }
     }
   </style>
 </head>
@@ -304,17 +310,13 @@
       </form>
       <button type="button" id="filters-done">Done</button>
     </div>
+    <p id="warn" class="filter-warn" role="status" hidden>Minimum is above maximum.</p>
+    <p id="load-error" class="load-error" role="alert" hidden></p>
   </header>
   <div class="stage">
     <button type="button" id="filters-backdrop" aria-label="Dismiss filters"></button>
     <div id="map"></div>
-    <div class="legend">
-      <div id="range">All assessed values</div>
-      <div id="lot-range">All lot sizes</div>
-      <div class="legend-key"><span class="dot dot-fav" aria-hidden="true"></span> Favorites <span class="dot dot-parcel" aria-hidden="true"></span> Other parcels</div>
-      <div id="warn" hidden>Minimum is above maximum.</div>
-      <div id="bar"></div>
-    </div>
+    <div id="bar" hidden></div>
     <aside id="fav-panel" hidden aria-labelledby="fav-heading">
       <div class="fav-head">
         <h2 id="fav-heading">Favorites</h2>
@@ -442,9 +444,8 @@
   // Stars stay outside the cluster group so a favorite remains visible on top of clusters.
   var favoriteStars = L.layerGroup().addTo(map);
 
-  var rangeEl = document.getElementById('range');
-  var lotRangeEl = document.getElementById('lot-range');
   var warnEl = document.getElementById('warn');
+  var loadErrorEl = document.getElementById('load-error');
   var barEl = document.getElementById('bar');
   var minEl = document.getElementById('min-value');
   var maxEl = document.getElementById('max-value');
@@ -541,20 +542,6 @@
     if (filter.max != null && value > filter.max) return false;
     return true;
   }
-  function rangeLabel(filter) {
-    if (filter.min == null && filter.max == null) return 'All assessed values';
-    if (filter.min != null && filter.max != null) return fmtCAD(filter.min) + ' – ' + fmtCAD(filter.max);
-    if (filter.min != null) return fmtCAD(filter.min) + ' and up';
-    return 'Up to ' + fmtCAD(filter.max);
-  }
-  function lotRangeLabel(filter) {
-    if (filter.min == null && filter.max == null) return 'All lot sizes';
-    if (filter.min != null && filter.max != null) {
-      return fmtNum(Math.round(filter.min)) + ' – ' + fmtNum(Math.round(filter.max)) + ' sq ft';
-    }
-    if (filter.min != null) return fmtNum(Math.round(filter.min)) + ' sq ft and up';
-    return 'Up to ' + fmtNum(Math.round(filter.max)) + ' sq ft';
-  }
   function boundsInverted(filter) {
     return filter.min != null && filter.max != null && filter.min > filter.max;
   }
@@ -565,8 +552,13 @@
     return (filter.min == null ? '' : String(filter.min)) + '|' + (filter.max == null ? '' : String(filter.max));
   }
   function setProgress(loaded) {
-    var pct = loadComplete ? 100 : Math.min(99, (loaded / TOTAL_ESTIMATE) * 100);
-    barEl.style.width = pct + '%';
+    if (loadComplete) {
+      barEl.hidden = true;
+      barEl.style.width = '0';
+      return;
+    }
+    barEl.hidden = false;
+    barEl.style.width = Math.min(99, (loaded / TOTAL_ESTIMATE) * 100) + '%';
   }
   function centroid(mp) {
     try {
@@ -894,8 +886,6 @@
       warnEl.textContent = 'Minimum is above maximum.';
     }
     warnEl.hidden = !(valueInverted || lotInverted);
-    rangeEl.textContent = rangeLabel(filter);
-    lotRangeEl.textContent = lotRangeLabel(lotFilter);
     clearBtn.disabled = filter.min == null && filter.max == null;
     clearLotBtn.disabled = lotFilter.min == null && lotFilter.max == null;
     syncFiltersToggle(filter, lotFilter);
@@ -1135,7 +1125,9 @@
       if (bounds.length && !keepView) map.fitBounds(bounds, { padding: [24, 24] });
     } catch (e) {
       loadComplete = true;
-      rangeEl.textContent = 'Load failed: ' + e.message + ' (try refreshing)';
+      barEl.hidden = true;
+      loadErrorEl.hidden = false;
+      loadErrorEl.textContent = 'Load failed: ' + e.message + ' (try refreshing)';
       renderFavorites();
       console.error(e);
     }
