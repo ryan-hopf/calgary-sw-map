@@ -13,14 +13,10 @@
     header {
       position: relative; flex: 0 0 auto; z-index: 1000; background: #1a365d; color: #fff;
       display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-      gap: 10px 20px; padding: 8px 16px; box-sizing: border-box;
-      box-shadow: 0 2px 6px rgba(0,0,0,.25);
+      gap: 4px 12px; padding: 4px 12px; box-sizing: border-box;
+      box-shadow: 0 1px 4px rgba(0,0,0,.22);
     }
-    header h1 { font-size: 15px; font-weight: 600; margin: 0; line-height: 1.3; }
-    header p { font-size: 12px; margin: 2px 0 0; opacity: .85; }
-    .brand { flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; }
-    .titles { min-width: 0; }
-    .action-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; max-width: 100%; }
+    .action-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; flex: 0 0 auto; }
     .filters {
       display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end;
       gap: 8px 18px; flex: 3 1 680px; min-width: 0;
@@ -37,18 +33,18 @@
     .money {
       display: flex; align-items: center; gap: 2px; flex: 1 1 0; min-width: 0;
       background: #fff; color: #1a365d; border-radius: 4px; padding: 0 8px;
-      box-sizing: border-box; min-height: 40px;
+      box-sizing: border-box; min-height: 36px;
     }
     .money .prefix { font-size: 14px; font-weight: 600; }
     .money input {
       width: 100%; min-width: 0; border: 0; background: transparent; color: #1a365d;
-      font: inherit; font-size: 16px; padding: 8px 0; outline: none;
+      font: inherit; font-size: 15px; padding: 4px 0; outline: none;
     }
     .money input::placeholder { color: #718096; }
     .dash { opacity: .85; flex: 0 0 auto; }
     #clear-filter, #clear-lot {
       background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.55);
-      border-radius: 4px; padding: 8px 12px; min-height: 40px; font: inherit; font-size: 13px;
+      border-radius: 4px; padding: 4px 10px; min-height: 36px; font: inherit; font-size: 13px;
       cursor: pointer;
     }
     #clear-filter:disabled, #clear-lot:disabled { opacity: .4; cursor: default; }
@@ -56,7 +52,7 @@
     #fav-open, #filters-toggle {
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
       background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.55);
-      border-radius: 4px; padding: 8px 12px; min-height: 40px; font: inherit; font-size: 13px;
+      border-radius: 4px; padding: 4px 10px; min-height: 36px; font: inherit; font-size: 13px;
       font-weight: 600; cursor: pointer;
     }
     #filters-toggle { display: none; }
@@ -86,25 +82,21 @@
     /* Stacking context so map overlays stay under the header's filter sheet. */
     .stage { position: relative; z-index: 1; flex: 1 1 auto; min-height: 0; }
     #map { height: 100%; width: 100%; }
-    .legend {
-      position: absolute; bottom: 24px; left: 12px; z-index: 1000;
-      background: rgba(255,255,255,.96); padding: 10px 12px; border-radius: 6px;
-      box-shadow: 0 1px 4px rgba(0,0,0,.3); font-size: 12px; max-width: min(320px, calc(100% - 24px));
+    /* Load progress overlays the map edge so it does not add a chrome row. */
+    #bar {
+      position: absolute; top: 0; left: 0; z-index: 400; height: 3px; width: 0;
+      background: #2b6cb0; pointer-events: none; transition: width .2s;
     }
-    #range, #lot-range { color: #2d3748; }
-    #lot-range { margin-top: 4px; }
-    #warn { margin-top: 4px; color: #9b2c2c; }
+    #bar[hidden] { display: none; }
+    .filter-warn, .load-error {
+      flex: 1 1 100%; margin: 0; font-size: 12px; line-height: 1.3; font-weight: 600; color: #fed7d7;
+    }
+    .filter-warn[hidden], .load-error[hidden] { display: none; }
     .popup { font-size: 13px; line-height: 1.45; min-width: 200px; }
     .popup strong { display: block; font-size: 14px; margin-bottom: 6px; }
     .row { display: flex; justify-content: space-between; gap: 12px; }
     .label { color: #555; }
-    #bar { height: 3px; background: #2b6cb0; width: 0; transition: width .2s; margin-top: 6px; border-radius: 2px; }
-    .legend-key { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; margin-top: 6px; color: #2d3748; }
-    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; box-sizing: border-box; }
-    .dot-parcel { background: #3182ce; box-shadow: inset 0 0 0 1px #1a365d; }
-    .dot-fav { width: 12px; height: 12px; background: #d69e2e; box-shadow: inset 0 0 0 2px #744210; }
     /* Same imagery switch as lot lines: white markers read on aerial photos. Favorites stay gold. */
-    body.imagery-base .dot-parcel { background: #fff; box-shadow: inset 0 0 0 1px #0f172a; }
     body.imagery-base .marker-cluster:not(.fav-cluster) { background-color: rgba(15, 23, 42, 0.55); }
     body.imagery-base .marker-cluster:not(.fav-cluster) div {
       background-color: rgba(255, 255, 255, 0.95); color: #0f172a;
@@ -128,10 +120,6 @@
       cursor: pointer;
     }
     #fav-close:hover { background: rgba(255,255,255,.12); }
-    .fav-note {
-      margin: 0; padding: 8px 12px; font-size: 12px; line-height: 1.4; color: #4a5568;
-      background: #f7fafc; border-bottom: 1px solid #e2e8f0;
-    }
     .fav-empty { margin: 0; padding: 16px 12px 18px; font-size: 13px; line-height: 1.45; color: #2d3748; }
     #fav-list { list-style: none; margin: 0; padding: 0; overflow: auto; min-height: 0; -webkit-overflow-scrolling: touch; }
     .fav-item { padding: 10px 12px 12px; border-bottom: 1px solid #edf2f7; }
@@ -202,9 +190,10 @@
     }
     /* Phones, and short landscape phones that are still wider than 768px. */
     @media (max-width: 767px), (max-height: 500px) and (orientation: landscape) and (max-width: 1024px) {
-      header h1 { font-size: 14px; }
-      .brand { flex: 1 1 100%; }
+      header { padding: 4px 10px; gap: 4px 8px; }
       .action-row { width: 100%; }
+      .money { min-height: 44px; }
+      .money input { font-size: 16px; padding: 8px 0; }
       #filters-toggle { display: inline-flex; flex: 1 1 0; min-height: 44px; }
       #fav-open { flex: 1 1 0; min-height: 44px; }
       #clear-filter, #clear-lot, #filters-done { min-height: 44px; }
@@ -227,7 +216,6 @@
         padding: 8px 12px; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
       }
       #filters-done:hover { background: #ebf8ff; }
-      .legend { max-width: min(210px, calc(58vw - 16px)); }
       #fav-panel {
         top: auto; bottom: 8px; left: 8px; right: 8px; width: auto;
         max-height: min(62vh, calc(100% - 16px));
@@ -252,22 +240,16 @@
 </head>
 <body>
   <header id="app-header" class="filters-collapsed">
-    <div class="brand">
-      <div class="titles">
-        <h1>Calgary SW — Single-family homes/lots with land size ≥ 10,000 sq ft</h1>
-        <p>Detached, acreage &amp; vacant lots only · multifamily/condo excluded</p>
-      </div>
-      <div class="action-row">
-        <button type="button" id="filters-toggle" aria-expanded="false" aria-controls="filters">
-          <span>Filters</span>
-          <span id="filters-badge" class="filters-badge" hidden>0</span>
-        </button>
-        <button type="button" id="fav-open" aria-expanded="false" aria-controls="fav-panel">
-          <span aria-hidden="true">★</span>
-          <span>Favorites</span>
-          <span id="fav-count" class="fav-count">0</span>
-        </button>
-      </div>
+    <div class="action-row">
+      <button type="button" id="filters-toggle" aria-expanded="false" aria-controls="filters">
+        <span>Filters</span>
+        <span id="filters-badge" class="filters-badge" hidden>0</span>
+      </button>
+      <button type="button" id="fav-open" aria-expanded="false" aria-controls="fav-panel">
+        <span aria-hidden="true">★</span>
+        <span>Favorites</span>
+        <span id="fav-count" class="fav-count">0</span>
+      </button>
     </div>
     <div class="filters" id="filters">
       <form id="value-filter" class="value-filter" autocomplete="off">
@@ -304,24 +286,19 @@
       </form>
       <button type="button" id="filters-done">Done</button>
     </div>
+    <p id="warn" class="filter-warn" role="status" hidden>Minimum is above maximum.</p>
+    <p id="load-error" class="load-error" role="alert" hidden></p>
   </header>
   <div class="stage">
     <button type="button" id="filters-backdrop" aria-label="Dismiss filters"></button>
     <div id="map"></div>
-    <div class="legend">
-      <div id="range">All assessed values</div>
-      <div id="lot-range">All lot sizes</div>
-      <div class="legend-key"><span class="dot dot-fav" aria-hidden="true"></span> Favorites <span class="dot dot-parcel" aria-hidden="true"></span> Other parcels</div>
-      <div id="warn" hidden>Minimum is above maximum.</div>
-      <div id="bar"></div>
-    </div>
+    <div id="bar" hidden></div>
     <aside id="fav-panel" hidden aria-labelledby="fav-heading">
       <div class="fav-head">
         <h2 id="fav-heading">Favorites</h2>
         <button type="button" id="fav-close">Close</button>
       </div>
-      <p class="fav-note">Saved in this browser. This list keeps every favorite. Map markers still follow the assessed-value and lot-size filters.</p>
-      <p id="fav-empty" class="fav-empty">No favorites yet. Open a parcel and tap Favorite to keep it on this device.</p>
+      <p id="fav-empty" class="fav-empty">No favorites yet.</p>
       <ul id="fav-list"></ul>
     </aside>
   </div>
@@ -442,9 +419,8 @@
   // Stars stay outside the cluster group so a favorite remains visible on top of clusters.
   var favoriteStars = L.layerGroup().addTo(map);
 
-  var rangeEl = document.getElementById('range');
-  var lotRangeEl = document.getElementById('lot-range');
   var warnEl = document.getElementById('warn');
+  var loadErrorEl = document.getElementById('load-error');
   var barEl = document.getElementById('bar');
   var minEl = document.getElementById('min-value');
   var maxEl = document.getElementById('max-value');
@@ -484,11 +460,12 @@
   var favList = document.getElementById('fav-list');
   var favEmpty = document.getElementById('fav-empty');
   var favCountEl = document.getElementById('fav-count');
-  // Halo under a thinner stroke so shared lot edges stay readable on streets and imagery.
-  var STREET_HALO = { color: '#ffffff', weight: 2.5, opacity: 0.75 };
-  var STREET_LINE = { color: '#1a365d', weight: 1.15, opacity: 0.95 };
-  var IMAGERY_HALO = { color: '#0f172a', weight: 2.75, opacity: 0.85 };
-  var IMAGERY_LINE = { color: '#ffffff', weight: 1.35, opacity: 0.95 };
+  // Bright cyan edge, contrasting halo, and a light fill on the halo only.
+  // The fill paints under both strokes so roofs stay visible through the tint.
+  var STREET_HALO = { color: '#ffffff', weight: 3.6, opacity: 0.95, fillColor: '#7dd3fc', fillOpacity: 0.16 };
+  var STREET_LINE = { color: '#0284c7', weight: 2.15, opacity: 1 };
+  var IMAGERY_HALO = { color: '#082f49', weight: 4, opacity: 0.92, fillColor: '#f0f9ff', fillOpacity: 0.12 };
+  var IMAGERY_LINE = { color: '#67e8f9', weight: 2.25, opacity: 1 };
 
   function fmtNum(n) {
     var x = Number(n);
@@ -541,20 +518,6 @@
     if (filter.max != null && value > filter.max) return false;
     return true;
   }
-  function rangeLabel(filter) {
-    if (filter.min == null && filter.max == null) return 'All assessed values';
-    if (filter.min != null && filter.max != null) return fmtCAD(filter.min) + ' – ' + fmtCAD(filter.max);
-    if (filter.min != null) return fmtCAD(filter.min) + ' and up';
-    return 'Up to ' + fmtCAD(filter.max);
-  }
-  function lotRangeLabel(filter) {
-    if (filter.min == null && filter.max == null) return 'All lot sizes';
-    if (filter.min != null && filter.max != null) {
-      return fmtNum(Math.round(filter.min)) + ' – ' + fmtNum(Math.round(filter.max)) + ' sq ft';
-    }
-    if (filter.min != null) return fmtNum(Math.round(filter.min)) + ' sq ft and up';
-    return 'Up to ' + fmtNum(Math.round(filter.max)) + ' sq ft';
-  }
   function boundsInverted(filter) {
     return filter.min != null && filter.max != null && filter.min > filter.max;
   }
@@ -565,8 +528,13 @@
     return (filter.min == null ? '' : String(filter.min)) + '|' + (filter.max == null ? '' : String(filter.max));
   }
   function setProgress(loaded) {
-    var pct = loadComplete ? 100 : Math.min(99, (loaded / TOTAL_ESTIMATE) * 100);
-    barEl.style.width = pct + '%';
+    if (loadComplete) {
+      barEl.hidden = true;
+      barEl.style.width = '0';
+      return;
+    }
+    barEl.hidden = false;
+    barEl.style.width = Math.min(99, (loaded / TOTAL_ESTIMATE) * 100) + '%';
   }
   function centroid(mp) {
     try {
@@ -797,20 +765,31 @@
     }
     return latlngs.length ? latlngs : null;
   }
-  function partOptions(style) {
+  function pathPaint(style) {
+    var filled = style.fillOpacity > 0 && !!style.fillColor;
     return {
-      renderer: lotRenderer,
-      pane: 'lotLines',
       interactive: false,
-      fill: false,
+      stroke: true,
       color: style.color,
       weight: style.weight,
-      opacity: style.opacity
+      opacity: style.opacity,
+      lineJoin: 'round',
+      lineCap: 'round',
+      fill: filled,
+      fillColor: filled ? style.fillColor : '#000000',
+      fillOpacity: filled ? style.fillOpacity : 0
     };
   }
+  function partOptions(style) {
+    var opts = pathPaint(style);
+    opts.renderer = lotRenderer;
+    opts.pane = 'lotLines';
+    return opts;
+  }
   function applyPartStyle(part, style) {
-    if (part._map) part.setStyle(style);
-    else L.setOptions(part, style);
+    var paint = pathPaint(style);
+    if (part._map) part.setStyle(paint);
+    else L.setOptions(part, paint);
   }
   // Polygons are built on first use so the initial marker load stays unchanged.
   function ensureLotLine(marker) {
@@ -894,8 +873,6 @@
       warnEl.textContent = 'Minimum is above maximum.';
     }
     warnEl.hidden = !(valueInverted || lotInverted);
-    rangeEl.textContent = rangeLabel(filter);
-    lotRangeEl.textContent = lotRangeLabel(lotFilter);
     clearBtn.disabled = filter.min == null && filter.max == null;
     clearLotBtn.disabled = lotFilter.min == null && lotFilter.max == null;
     syncFiltersToggle(filter, lotFilter);
@@ -1135,7 +1112,9 @@
       if (bounds.length && !keepView) map.fitBounds(bounds, { padding: [24, 24] });
     } catch (e) {
       loadComplete = true;
-      rangeEl.textContent = 'Load failed: ' + e.message + ' (try refreshing)';
+      barEl.hidden = true;
+      loadErrorEl.hidden = false;
+      loadErrorEl.textContent = 'Load failed: ' + e.message + ' (try refreshing)';
       renderFavorites();
       console.error(e);
     }
