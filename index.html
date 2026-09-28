@@ -167,7 +167,7 @@
       max-width: min(420px, calc(100vw - 36px));
       white-space: normal; line-height: 1.35;
     }
-    /* Outlines sit under markers. The canvas must not take clicks from them. */
+    /* Outlines sit above parcel dots. Clicks pass through to the markers. */
     .leaflet-lotLines-pane { pointer-events: none; }
     .sr {
       position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
@@ -299,9 +299,9 @@
   var TOTAL_ESTIMATE = 4300;
 
   var map = L.map('map', { preferCanvas: true }).setView([50.98, -114.12], 11);
-  // Below the overlay pane (circle markers) and above tiles, including hybrid labels.
+  // Above circle markers (overlay pane is 400) and below favorite stars.
   map.createPane('lotLines');
-  map.getPane('lotLines').style.zIndex = 350;
+  map.getPane('lotLines').style.zIndex = 450;
   // Above parcel markers, below popups.
   map.createPane('favorites');
   map.getPane('favorites').style.zIndex = 650;
