@@ -238,7 +238,7 @@
     }
   </style>
 </head>
-<body>
+<body class="imagery-base">
   <header id="app-header" class="filters-collapsed">
     <div class="action-row">
       <button type="button" id="filters-toggle" aria-expanded="false" aria-controls="filters">
@@ -334,16 +334,15 @@
   var streets = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-  }).addTo(map);
+  });
   var satellite = imageryLayer(IMAGERY_ATTR);
   // Reference tiles stay on the tile pane, under parcel markers and clusters.
   var hybrid = L.layerGroup([
     imageryLayer(HYBRID_ATTR),
     L.tileLayer(ROADS, { maxZoom: 19 }),
     L.tileLayer(PLACES, { maxZoom: 19 })
-  ]);
+  ]).addTo(map);
   var baseLayers = { Streets: streets, Satellite: satellite, Hybrid: hybrid };
-  // Empty until the overlay is turned on, so the first paint stays markers-only.
   var lotLines = L.layerGroup();
   // Keep this query in sync with the narrow-screen CSS block.
   var NARROW_QUERY = '(max-width: 767px), (max-height: 500px) and (orientation: landscape) and (max-width: 1024px)';
@@ -437,9 +436,11 @@
   var filterTimer = null;
   var syncedCount = 0;
   var lastFilterKey = null;
-  var lotLinesOn = false;
+  var lotLinesOn = true;
   var lotSyncGen = 0;
-  var imageryBase = false;
+  var imageryBase = true;
+  // overlayadd runs inside addTo and sets lotLinesOn, so this stays after that var.
+  lotLines.addTo(map);
   // Favorites persist by Calgary roll number. The list shows every saved parcel;
   // markers and lot lines still follow the assessed-value and lot-size filters.
   var FAVORITES_STORAGE_KEY = 'calgary-sw-map.favorites';
